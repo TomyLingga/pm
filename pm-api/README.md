@@ -1,64 +1,74 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# pm-api — Backend PM-App PT INL
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST (JSON, prefix `/api/v1`) untuk Work Order, Form Request, dan Preventive Maintenance.
+Kontrak API: [`../docs/API_WORK_ORDER.md`](../docs/API_WORK_ORDER.md) (Modul A) dan
+[`../docs/API_SERVICE_REQUEST.md`](../docs/API_SERVICE_REQUEST.md) (Modul B). Integrasi SSO: [`../docs/SSO.md`](../docs/SSO.md).
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Laravel 8.83 (PHP 8.2), PostgreSQL, Sanctum 2 (cookie SPA untuk web, token permanen per perangkat untuk mobile)
+- spatie/laravel-permission (role global `admin`, `management`)
+- maatwebsite/excel (export), dompdf 3 + endroid/qr-code (PDF formulir + QR tanda tangan)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Setup lokal
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+composer install
+cp .env.example .env          # isi DB_*, PORTAL_*, PM_WEB_URL
+php artisan key:generate
+php artisan migrate --seed    # tabel + role admin/management
+php artisan serve             # http://127.0.0.1:8000
+```
 
-## Learning Laravel
+Data organisasi & karyawan berasal dari Portal INTES:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+```bash
+php artisan portal:sync                                   # unit organisasi + karyawan (juga terjadwal 02:00)
+php artisan pm:executor-unit IT --display="Sistem dan IT" \
+    --category=Software --category=Hardware --category=Network \
+    --rules="1. Bahwa dengan pengesahan diatas, ...|2. Password akan ..." \
+    --footer="Untuk informasi, silakan menghubungi IT HP : 081260666418 Ext. 144"
+# seksi pelaksana + kategori + "Petunjuk dan Aturan" Form Request (baris dipisah |; bisa diubah pimpinan lewat API)
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Lokasi, equipment, dan material sementara diisi lewat seeder/SQL (UI master data & import Excel menyusul).
+Memberi role admin: `php artisan tinker` → `App\Models\User::where('nrk','...')->first()->assignRole('admin')`.
 
-## Laravel Sponsors
+## Scheduler & queue
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+```bash
+php artisan schedule:work     # lokal; di server pakai cron `* * * * * php artisan schedule:run`
+php artisan queue:work        # bila QUEUE_CONNECTION=database/redis (disarankan di produksi)
+```
 
-### Premium Partners
+| Command | Jadwal | Fungsi |
+|---|---|---|
+| `wo:auto-accept` | tiap jam | WO `completed` tanpa respons user > 3 hari kerja → `closed` otomatis |
+| `approvals:remind` | tiap jam | langkah approval yang menunggu > 24 jam → notifikasi alarm ke approver (diulang tiap 24 jam) |
+| `portal:sync` | 02:00 | sinkron unit organisasi & karyawan; user yang hilang dari Portal dinonaktifkan |
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+## Aturan bisnis penting
 
-## Contributing
+- **Peran pelaksana** diturunkan otomatis: staf = user di unit Portal seksi pelaksana (atau turunannya) + anggota
+  tambahan (`executor_unit_members`); pimpinan = grade `PM_LEAD_GRADE_CODES` (default BOM, BOM-1, BOM-2, BOM-3), teknisi = BOM-4.
+- **Nomor WO**: `WO/{kode seksi}/{bulan romawi}/{tahun}/{0001}`, urut per seksi per tahun.
+- **Status WO**: lihat `../docs/STATE_MACHINES.md`. Siapa yang boleh → `WorkOrderPolicy` (403); kapan boleh → `WorkOrderService` (409).
+- **Form Request**: rantai Atasan YBS → Mgr/Spv Divisi → Foreman Divisi dijalankan mesin approval generik
+  (`App\Services\Approvals\ApprovalEngine`, tabel `approval_steps`). Atasan default = pilihan terakhir pemohon,
+  lalu `atasan_id` Portal; pilihan lain harus grade lebih tinggi. Minta revisi → draft, putaran approval baru.
+  Nomor `REQ{0001}/{kode seksi}/{romawi}/{tahun}` terbit saat submit pertama.
+- Semua perubahan status tercatat di `status_logs`; setiap pengesahan membuat `document_signatures` (QR → `/verifikasi/{token}`).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Test
 
-## Code of Conduct
+Memakai database PostgreSQL terpisah `pm_test` (lihat `phpunit.xml`), Portal & Expo di-fake.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan test
+```
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Cakupan: SSO web, login mobile (email/NRK, TOTP, rate limit, logout per perangkat, user nonaktif), sinkronisasi Portal,
+alur WO lengkap (assign & pick, acceptance Yes/No + rework), otorisasi, transisi tidak valid (409), list/filter/scope,
+export Excel, PDF, lampiran, auto-accept hari kerja, penomoran, verifikasi QR, notifikasi & push Expo;
+Form Request (alur sukses, ditolak atasan, ditolak divisi, revisi, ganti atasan, self-approval, visibilitas, pengingat,
+konversi WO ↔ Request, list/export, PDF).

@@ -27,7 +27,7 @@
 |---|---|---|---|
 | GET | `/sanctum/csrf-cookie` | (di luar `/api/v1`) set cookie XSRF sebelum login web | publik |
 | POST | `/auth/sso` | `{ token, app_id }` → verifikasi ke Portal, upsert user, buat sesi web | publik, rate-limited |
-| POST | `/auth/mobile/exchange` | `{ sso_token, device_name, push_token? }` — token SSO yang diambil aplikasi langsung dari Portal → token Sanctum 30 hari (`docs/SSO.md` §5b) | publik, rate-limited |
+| POST | `/auth/mobile/login` · `/auth/mobile/totp` | auth khusus mobile; kredensial diperiksa Portal → token Sanctum permanen per perangkat (`docs/SSO.md` §5b, kontrak rinci `docs/API_WORK_ORDER.md`) | publik, rate-limited |
 | POST | `/auth/logout` | web: invalidate sesi; mobile: cabut token. Respon berisi `portal_url` | login |
 | GET | `/auth/me` | profil, grade, unit (bagian/sub bagian), unit pelaksana & perannya, role global | login |
 | GET | `/auth/me/inbox` | ringkasan "perlu tindakan saya" (approval, WO ditugaskan/siap di-pick, PM jatuh tempo, WO menunggu penerimaan) | login |
@@ -99,29 +99,12 @@ Pola CRUD sama: `GET /x`, `POST /x`, `GET /x/{id}`, `PUT /x/{id}`, `DELETE /x/{i
 | GET | `/work-orders/{id}/pdf` | layout FM-BOPS-10/05 + QR tanda tangan | yang boleh lihat |
 | GET | `/work-orders/export` | xlsx | pelaksana, management |
 
-## 4. Modul B — Form Request
+## 4. Modul B — Form Request (DIIMPLEMENTASIKAN)
 
-| Method | Endpoint | Keterangan | Akses |
-|---|---|---|---|
-| GET | `/service-requests` | filter `status, executor_unit_id, service_category_id, priority, office_id, from, to, scope=mine\|unit\|to_approve\|executor` | sesuai Policy |
-| GET | `/service-requests/to-approve` | antrian saya sebagai atasan / pimpinan / pelaksana | login |
-| POST | `/service-requests` | `draft`; identitas diisi server | login |
-| GET | `/service-requests/{id}` | detail + jejak approval | pemohon, seunit, atasan terpilih, pelaksana, management |
-| PUT | `/service-requests/{id}` | edit selama `draft` | pemohon |
-| DELETE | `/service-requests/{id}` | draft yang belum pernah diajukan | pemohon |
-| POST | `/service-requests/{id}/submit` | `{ superior_id }` (kandidat grade lebih tinggi); nomor REQ terbit di submit pertama (Q-7) | pemohon |
-| POST | `/service-requests/{id}/change-superior` | `{ superior_id, reason? }` selama `waiting_superior` (pengganti delegasi, Q-17) | pemohon |
-| POST | `/service-requests/{id}/approve` | atasan → `waiting_executor`; pimpinan (+`assigned_executor_id?`) → `in_progress` | atasan terpilih / pimpinan |
-| POST | `/service-requests/{id}/reject` | `{ notes }` wajib | approver step berjalan |
-| POST | `/service-requests/{id}/request-revision` | `{ notes }` wajib → `draft` | approver step berjalan |
-| POST | `/service-requests/{id}/convert-to-work-order` | `{ reason }` → request `converted` + WO `submitted` (Q-9) | pimpinan (saat `waiting_executor`) |
-| POST | `/service-requests/{id}/assign` | `{ executor_id }` | pimpinan |
-| POST | `/service-requests/{id}/complete` | `{ executor_notes }` → `completed` | pelaksana |
-| POST | `/service-requests/{id}/cancel` | `{ reason }` sebelum `in_progress` (Q-9) | pemohon |
-| GET | `/service-requests/{id}/logs` | timeline | yang boleh lihat |
-| POST/DELETE | `/service-requests/{id}/attachments[/{attId}]` | | pemohon (draft), pelaksana |
-| GET | `/service-requests/{id}/pdf` | layout INLHO/BSIS-ITC/F-004 + QR | yang boleh lihat |
-| GET | `/service-requests/export` | xlsx | pelaksana, management |
+Kontrak lengkap & mengikat: [`API_SERVICE_REQUEST.md`](API_SERVICE_REQUEST.md) — list/filter/export, draft CRUD,
+aksi `submit · change-superior · approve · reject · request-revision · complete · cancel · convert-to-work-order`,
+PDF INLHO/BSIS-ITC/F-004, `GET /approvals/pending` ("Menunggu Persetujuan Saya", generik), lookup `offices`,
+`users/superior-candidates`, `users/my-superior`, dan `POST /work-orders/{id}/convert-to-request`.
 
 ## 5. Modul C — Preventive Maintenance
 

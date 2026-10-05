@@ -149,6 +149,9 @@ Non-transisi:
 | DELETE | `/attachments/{id}` | — | pengunggah, WO belum closed/cancelled |
 | GET | `/work-orders/{id}/pdf` | — | `application/pdf` (inline), layout FM-BOPS-10/05 + QR tanda tangan |
 
+Respon non-transisi: `PUT assignees/materials/labours` → `200 { data: WorkOrderDetail }`; upload lampiran →
+`201 { data: Attachment }`; `DELETE` lampiran → `204`; `POST /work-orders` → `201 { data: WorkOrderDetail }`.
+
 Error: `403` tidak berwenang, `409 { message }` transisi tidak valid, `422` validasi.
 
 ## 3. Notifikasi & push

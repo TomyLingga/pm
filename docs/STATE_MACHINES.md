@@ -49,33 +49,37 @@ stateDiagram-v2
 | completed | `auto_accept` | closed | sistem | `now ≥ acceptance_due_at`; `auto_accepted = true`; clearance user ditandai "otomatis" |
 | completed | `accept(no)` | in_progress | sama dengan accept | alasan wajib; `rework_count+1`; clearance di-reset; notif → assignee |
 
-## 2. Form Request
+## 2. Form Request (DIIMPLEMENTASIKAN — `pm-api`, mesin approval generik `approval_steps`)
 
 | Kode | Label UI |
 |---|---|
 | `draft` | DRAFT |
 | `waiting_superior` | MENUNGGU_ATASAN |
-| `waiting_executor` | MENUNGGU_DIVISI (pimpinan pelaksana) |
+| `waiting_executor` | MENUNGGU_DIVISI |
 | `in_progress` | DIPROSES |
 | `completed` | SELESAI |
 | `rejected` | DITOLAK |
 | `cancelled` | DIBATALKAN |
-| `converted` | DIALIHKAN KE WORK ORDER |
+| `converted` | DIALIHKAN KE WO |
+
+Rantai approval per putaran (`round` = `revision_no`), dikelola `App\Services\Approvals\ApprovalEngine`:
+`submission` (pemohon, otomatis selesai) → `superior` (Atasan YBS) → `executor_lead` (Mgr/Spv Divisi) → `executor` (Foreman Divisi, penyelesaian).
+Atasan YBS = pilihan pemohon; default pilihan terakhir pemohon, lalu `atasan_id` Portal (`users.superior_id`). Pilihan lain harus grade lebih tinggi.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> draft : create (Pemohon) / convert dari WO
-    draft --> waiting_superior : submit + pilih atasan
-    draft --> waiting_executor : submit, tanpa kandidat atasan
+    [*] --> draft : create (Pemohon) / dialihkan dari WO
+    draft --> waiting_superior : submit (atasan = default atasan_id / pilihan)
+    draft --> waiting_executor : submit, tanpa kandidat atasan (langkah superior skipped)
     waiting_superior --> waiting_superior : change_superior (Pemohon)
-    waiting_superior --> waiting_executor : approve (Atasan terpilih)
-    waiting_superior --> rejected : reject (alasan)
-    waiting_superior --> draft : request_revision (alasan)
-    waiting_executor --> in_progress : approve (Pimpinan pelaksana)
-    waiting_executor --> converted : convert_to_work_order (Pimpinan, alasan)
-    waiting_executor --> rejected : reject (alasan)
-    waiting_executor --> draft : request_revision (alasan)
-    in_progress --> completed : complete (Foreman/Teknisi)
+    waiting_superior --> waiting_executor : approve (Atasan YBS)
+    waiting_superior --> rejected : reject (catatan wajib)
+    waiting_superior --> draft : request_revision (catatan wajib)
+    waiting_executor --> in_progress : approve (Mgr/Spv, opsional tunjuk foreman)
+    waiting_executor --> converted : convert_to_work_order (Mgr/Spv, alasan)
+    waiting_executor --> rejected : reject (catatan wajib)
+    waiting_executor --> draft : request_revision (catatan wajib)
+    in_progress --> completed : complete (Foreman/teknisi, Keterangan wajib)
     draft --> cancelled : cancel (Pemohon)
     waiting_superior --> cancelled : cancel (Pemohon)
     waiting_executor --> cancelled : cancel (Pemohon)
@@ -85,18 +89,17 @@ stateDiagram-v2
     converted --> [*]
 ```
 
-| Dari | Aksi | Ke | Pelaku | Guard / efek |
-|---|---|---|---|---|
-| draft | `submit` | waiting_superior | pemohon | `superior_id` wajib, `grade_level` > pemohon (Q-1); snapshot identitas (bagian/sub bagian, HP, status karyawan) & aturan; nomor `REQ{0001}/{kode seksi}/…` terbit di submit pertama (Q-7, Q-31); simpan `preferred_superior_id`; QR "Diminta oleh"; notif → atasan |
-| draft | `submit` | waiting_executor | pemohon | hanya bila tidak ada kandidat atasan (grade tertinggi); step superior `skipped` |
-| waiting_superior | `change_superior` | (tetap) | pemohon | pengganti delegasi (Q-17); notif → atasan baru |
-| waiting_superior | `approve` | waiting_executor | atasan terpilih | QR "Disetujui oleh (Atasan YBS)"; notif → pimpinan pelaksana |
-| waiting_executor | `approve` | in_progress | pimpinan | opsional `assigned_executor_id`; QR "Disetujui oleh (Mgr/Spv)"; notif → pemohon & pelaksana |
-| waiting_executor | `convert_to_work_order` | converted | pimpinan | alasan wajib (mis. "cukup pakai WO"); membuat WO `submitted` (pemohon sama, `source_service_request_id`); notif → pemohon |
-| waiting_* | `reject` | rejected | approver step berjalan | alasan wajib |
-| waiting_* | `request_revision` | draft | approver step berjalan | alasan wajib; `revision_no+1`; QR lama `revoked`; approval diulang dari atasan |
-| in_progress | `complete` | completed | pelaksana | `executor_notes` wajib; QR "Diselesaikan oleh" |
-| draft / waiting_* | `cancel` | cancelled | pemohon | sebelum `in_progress` (Q-9) |
+| Aksi | Efek pada langkah approval | Efek lain |
+|---|---|---|
+| `submit` | putaran baru: submission `completed`, superior `pending` (atau `skipped`), sisanya `waiting` | nomor `REQ{0001}/{kode seksi}/{romawi}/{tahun}` terbit sekali; snapshot identitas & aturan; QR "Diminta oleh"; notif ke atasan |
+| `approve` | langkah aktif `approved`, langkah berikut `pending` | QR "Disetujui oleh"; notif ke approver berikutnya; foreman yang ditunjuk menjadi assignee langkah `executor` |
+| `reject` | aktif `rejected`, sisanya `cancelled` | notif alarm ke pemohon |
+| `request_revision` | aktif `revision_requested`, sisanya `cancelled` | status `draft`, `revision_no`+1, semua QR putaran itu dicabut; submit berikutnya mulai lagi dari atasan |
+| `complete` | `executor` `completed` | QR "Diselesaikan oleh" |
+| `cancel` / `convert` | semua langkah terbuka `cancelled` | konversi membuat WO `submitted` |
+
+Pemohon tidak pernah bisa bertindak pada langkah dokumennya sendiri. Langkah yang menunggu > 24 jam mendapat
+pengingat alarm (`approvals:remind`, diulang tiap 24 jam).
 
 ## 3. Tugas PM
 

@@ -1,6 +1,9 @@
 # ERD — PM-App PT INL
 
-> Status: **DRAFT v0.3** — sudah memasukkan jawaban Q-1…Q-36 di `docs/OPEN_QUESTIONS.md`.
+> Status: **v0.4** — tabel identitas, organisasi, master WO, Work Order & lintas modul sudah diimplementasikan di `pm-api` (Laravel 8).
+> Selisih implementasi vs diagram: `grade_capabilities` → config `PM_LEAD_GRADE_CODES`; `offices`, `equipment_categories`,
+> `checklist_*`, `document_templates`, `settings` dan modul Form Request/PM belum dibuat; status WO `accepted` tidak disimpan
+> (accept langsung `closed`, tercatat di log); kolom waktu memakai `timestamp` (zona Asia/Jakarta). Sebelumnya: **DRAFT v0.3** — sudah memasukkan jawaban Q-1…Q-36 di `docs/OPEN_QUESTIONS.md`.
 > Rujukan: `docs/PRD.md`, formulir di `docs/forms/`, `docs/SSO.md`. Keputusan yang masih terbuka ditandai **[Q-n]**.
 
 ## Konvensi
@@ -385,31 +388,42 @@ erDiagram
 
 ---
 
-## 4. Form Request (INLHO/BSIS-ITC/F-004)
+## 4. Form Request (INLHO/BSIS-ITC/F-004) — DIIMPLEMENTASIKAN
+
+Approval memakai tabel **generik** `approval_steps` (bukan `service_request_approvals`), sehingga mesin yang sama bisa
+dipakai dokumen lain. `users.superior_id` = cermin `atasan_id` Portal; `users.preferred_superior_id` = pilihan terakhir pemohon.
 
 ```mermaid
 erDiagram
     users ||--o{ service_requests : "requested by"
-    users ||--o{ service_requests : "chosen superior"
+    users |o--o{ service_requests : "Atasan YBS"
     executor_units ||--o{ service_requests : "handled by"
-    offices ||--o{ service_requests : "office"
-    service_categories ||--o{ service_requests : "jenis permintaan"
-    service_requests ||--|{ service_request_approvals : "approval trail"
-    work_orders |o--o| service_requests : "converted from"
+    offices |o--o{ service_requests : "office"
+    service_categories |o--o{ service_requests : "jenis permintaan"
+    service_requests ||--o{ approval_steps : "approvable (morph)"
+    users |o--o{ approval_steps : "assignee / acted by"
+    executor_units |o--o{ approval_steps : "lead / staff of"
+    work_orders |o--o| service_requests : "converted from / to"
 
+    offices {
+        bigint id PK
+        string code UK "HO, PBK"
+        string name "Head Office, Pabrik"
+        boolean is_active
+    }
     service_requests {
         bigint id PK
-        string request_number UK "null selama draft"
+        string request_number UK "REQ0001/IT/X/2026, null selama draft"
         bigint executor_unit_id FK
-        bigint office_id FK
         bigint service_category_id FK
+        bigint office_id FK
         text purpose "Keperluan"
-        string priority "high|medium|low"
-        decimal estimated_cost "nullable"
+        string priority "high|medium|low (Tinggi/Sedang/Rendah)"
+        decimal estimated_cost
         string status
-        string current_step "superior|executor_lead|executor|null"
+        smallint revision_no "= round approval aktif"
         bigint requester_id FK
-        string requester_name "snapshot identitas"
+        string requester_name "snapshot identitas saat submit"
         string requester_nrk
         string requester_position
         string requester_employment_status
@@ -417,41 +431,44 @@ erDiagram
         string requester_sub_bagian_name
         string requester_email
         string requester_phone
-        bigint superior_id FK "dipilih pemohon"
+        bigint superior_id FK
         string superior_name
-        bigint assigned_executor_id FK
+        bigint assigned_executor_id FK "foreman ditunjuk Mgr/Spv"
         text executor_notes "Keterangan"
-        text rules_snapshot
-        int revision_no
-        timestamptz submitted_at
-        timestamptz completed_at
-        timestamptz rejected_at
-        timestamptz cancelled_at
-        string conversion_reason "alasan dialihkan ke WO"
-        bigint source_work_order_id FK "nullable (Q-9)"
+        text rules_snapshot "Petunjuk dan Aturan"
+        string contact_footer_snapshot
+        timestamp submitted_at
+        timestamp completed_at
+        timestamp rejected_at
+        timestamp cancelled_at
+        string conversion_reason
+        timestamp converted_at
+        bigint source_work_order_id FK
+        bigint converted_work_order_id FK
     }
-    service_request_approvals {
+    approval_steps {
         bigint id PK
-        bigint service_request_id FK
-        int revision_no
-        string step "requester|superior|executor_lead|executor"
-        smallint step_order "1..4"
+        string approvable_type "service_request, …"
+        bigint approvable_id
+        smallint round
+        tinyint step_order
+        string step_key "submission|superior|executor_lead|executor"
+        string step_label
+        string kind "submission|approval|completion"
+        string assignee_type "user|executor_lead|executor_staff"
+        bigint assignee_user_id FK
+        bigint executor_unit_id FK
+        bigint initiator_id FK "tidak boleh bertindak"
+        string status "waiting|pending|approved|completed|rejected|revision_requested|skipped|cancelled"
+        timestamp activated_at
         bigint acted_by_id FK
-        string action "submitted|approved|rejected|revision_requested|completed|skipped|converted"
+        timestamp acted_at
         text notes
-        string actor_name "snapshot utk PDF"
-        string actor_phone "snapshot utk PDF"
-        timestamptz acted_at
+        string actor_name "snapshot PENGESAHAN"
+        string actor_phone "NO. HP"
+        timestamp last_reminded_at "pengingat > 24 jam"
     }
 ```
-
-**Catatan**
-- Atasan dipilih pemohon dari kandidat grade lebih tinggi; selama `waiting_superior` pemohon boleh **mengganti atasan**
-  (pengganti delegasi, Q-17) — tercatat di `status_logs`.
-- Tidak ada step biaya tambahan (Q-18); Keperluan berupa teks (Q-19).
-- Blok PENGESAHAN = baris approval `revision_no` terakhir + QR dari `document_signatures`.
-
----
 
 ## 5. Preventive Maintenance
 

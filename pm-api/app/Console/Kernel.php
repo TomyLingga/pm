@@ -15,7 +15,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('wo:auto-accept')->hourly()->withoutOverlapping();
+        $schedule->command('approvals:remind')->hourly()->withoutOverlapping();
+        $schedule->command('portal:sync')->dailyAt('02:00')->withoutOverlapping();
     }
 
     /**

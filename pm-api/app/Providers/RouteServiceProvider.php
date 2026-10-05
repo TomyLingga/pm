@@ -57,7 +57,15 @@ class RouteServiceProvider extends ServiceProvider
     protected function configureRateLimiting()
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+            return Limit::perMinute(240)->by(optional($request->user())->id ?: $request->ip());
+        });
+
+        // Mobile login is relayed to Portal, which itself allows 20 logins/minute per IP.
+        RateLimiter::for('mobile-login', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by(mb_strtolower((string) $request->input('login')).'|'.$request->ip()),
+                Limit::perMinute(15)->by($request->ip()),
+            ];
         });
     }
 }

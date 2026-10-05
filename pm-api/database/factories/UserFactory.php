@@ -2,38 +2,45 @@
 
 namespace Database\Factories;
 
+use App\Models\OrgUnit;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 class UserFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array
-     */
-    public function definition()
+    protected $model = User::class;
+
+    public function definition(): array
     {
         return [
+            'portal_user_id' => (string) Str::uuid(),
+            'portal_employee_id' => (string) Str::uuid(),
+            'nrk' => (string) $this->faker->unique()->numerify('1190#####'),
             'name' => $this->faker->name(),
-            'email' => $this->faker->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-            'remember_token' => Str::random(10),
+            'email' => $this->faker->unique()->userName().'@inl.co.id',
+            'phone' => $this->faker->numerify('08##########'),
+            'employment_status' => 'Karyawan Tetap',
+            'position' => 'Staf',
+            'grade_code' => 'BOM-4',
+            'grade_level' => 5,
+            'is_active' => true,
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
-     */
-    public function unverified()
+    public function inUnit(OrgUnit $unit): static
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'email_verified_at' => null,
-            ];
-        });
+        return $this->state(fn () => ['org_unit_id' => $unit->id]);
+    }
+
+    /** Executor lead (Assisten/Supervisor). */
+    public function lead(): static
+    {
+        return $this->state(fn () => ['grade_code' => 'BOM-3', 'grade_level' => 8, 'position' => 'Supervisor']);
+    }
+
+    public function technician(): static
+    {
+        return $this->state(fn () => ['grade_code' => 'BOM-4', 'grade_level' => 5, 'position' => 'Teknisi']);
     }
 }

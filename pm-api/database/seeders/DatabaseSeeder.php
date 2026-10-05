@@ -7,12 +7,11 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
-     *
-     * @return void
+     * Reference data only. Org units and employees come from Portal (`php artisan portal:sync`),
+     * executor units from `php artisan pm:executor-unit`.
      */
-    public function run()
+    public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        $this->call([RoleSeeder::class, OfficeSeeder::class]);
     }
 }

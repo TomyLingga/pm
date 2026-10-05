@@ -5,14 +5,16 @@ Preventive Maintenance Scheduler bagi divisi support (Sistem & IT, Maintenance/M
 General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 
 ## Stack (WAJIB, jangan ganti tanpa bertanya)
-- Backend: Laravel 11, PHP 8.2, PostgreSQL
+- Backend: **Laravel 8.83** (keputusan user, sama dengan IDAS), PHP 8.2, PostgreSQL. Tanpa native enum cast,
+  `barryvdh/laravel-dompdf` v3, dll — cek kompatibilitas Laravel 8 sebelum menambah paket
 - Autentikasi web: **SSO via Portal Apps INTES**, pola sama dengan aplikasi IDAS/Approver
   (BE memverifikasi token ke Portal → sesi cookie Sanctum SPA). DILARANG membuat halaman login web,
   register, reset password, atau menyimpan password di aplikasi ini. Detail: docs/SSO.md
-- Autentikasi mobile: form login di aplikasi; HP memanggil API login Portal langsung, lalu menukar token SSO
-  ke BE PM-App → token Sanctum per perangkat. Password tidak pernah lewat/tersimpan di PM-App. Detail: docs/SSO.md
+- Autentikasi mobile (auth khusus mobile): form login di aplikasi → `POST /api/v1/auth/mobile/login` → pm-api
+  meneruskan kredensial ke API login Portal (password tidak disimpan) → token Sanctum **permanen** per perangkat,
+  dicabut saat logout / user nonaktif. Detail: docs/SSO.md
 - Frontend web: Next.js 14 (App Router) + TypeScript + Tailwind + shadcn/ui
-- Mobile: PWA dari Next.js + aplikasi Android React Native (Expo, folder `mobile/`) dengan push & alarm, memakai API yang sama
+- Mobile: aplikasi Android React Native (Expo SDK 52, Node 18) dengan push & alarm, memakai API yang sama
 - Queue & scheduler: Laravel Queue (database/redis) + Laravel Task Scheduling
 - Deploy: Docker Compose di server CentOS (container: pm-be, pm-fe, pm-db, pm-redis)
 
@@ -25,7 +27,12 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 - Setiap fitur baru wajib ada Feature Test (PHPUnit/Pest). Jalankan `php artisan test` sebelum bilang selesai.
 - Jangan buat data dummy di migration; pakai Seeder terpisah.
 
+## Struktur
+- `pm-api/` backend Laravel · `pm-web/` frontend Next.js · `pm-mobile/` aplikasi Android Expo · `docs/` desain
+- Kontrak API yang mengikat ketiganya: `docs/API_WORK_ORDER.md` (perbarui bila endpoint berubah)
+
 ## Perintah
-- Backend: `cd be && php artisan serve`, test: `php artisan test`
-- Frontend: `cd fe && npm run dev`, lint: `npm run lint`
-- Docker: `docker compose up -d --build`
+- Backend: `cd pm-api && php artisan serve`, test: `php artisan test` (DB PostgreSQL `pm_test`)
+- Frontend: `cd pm-web && npm run dev`, lint: `npm run lint`, build: `npm run build`
+- Mobile: `cd pm-mobile && npx expo start`, cek: `npx tsc --noEmit`
+- Docker: `docker compose up -d --build` (belum dibuat)

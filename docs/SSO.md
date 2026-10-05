@@ -14,7 +14,7 @@
 | Single logout | **Tidak ada.** Logout Portal hanya mematikan sesi Portal. |
 | Hak akses per aplikasi | **Ada**, dicek saat token SSO dibuat (`access_mode`: semua / kecuali / khusus / per unit). |
 | Rekomendasi web | Pola IDAS: BE PM-App menukar token SSO → sesi cookie Sanctum SPA. |
-| Rekomendasi mobile | Authorization Code + PKCE **tidak bisa** (Portal bukan OAuth2). Pakai login di aplikasi → **langsung ke API Portal dari HP** → token SSO → ditukar ke token Sanctum PM-App. |
+| Rekomendasi mobile | Authorization Code + PKCE **tidak bisa** (Portal bukan OAuth2). Diimplementasikan: auth khusus mobile di pm-api (kredensial diperiksa Portal) → token Sanctum **permanen** per perangkat (§5b). |
 | Perubahan Portal | Hanya patch additive no HP + status karyawan (**sudah diterapkan**, §7). Rekomendasi keamanan lain dicatat di §8 dan **tidak** diterapkan. |
 
 ---
@@ -143,61 +143,57 @@ sequenceDiagram
 Catatan: FE & BE di satu origin (Next.js mem-proxy `/api` dan `/sanctum` ke Laravel), sehingga cookie first-party dan
 CORS tidak diperlukan. Token SSO dihapus dari URL segera setelah ditukar agar tidak tersimpan di history/log.
 
-### 5b. Mobile Android (React Native / Expo) — login di aplikasi, langsung ke Portal
+### 5b. Mobile Android (React Native / Expo) — auth khusus mobile, token permanen (DIIMPLEMENTASIKAN)
 
-**Kenapa bukan Authorization Code + PKCE:** Portal tidak punya endpoint `/authorize` & `/token`, `client_id`, maupun
-callback per klien (§1–2). Membuat server OAuth2 di Portal melanggar batasan "jangan ubah Portal". Alur di bawah memberi
-sifat yang mirip: aplikasi tidak pernah menyimpan password, kredensial hanya dikirim ke Portal, dan yang ditukar ke PM-App
-hanya token sekali pakai berumur 5 menit (setara authorization code).
-
-**Revisi dari rancangan v0.2 (Q-33):** login dikirim **langsung dari HP ke Portal**, bukan diteruskan oleh BE PM-App, karena:
-1. rate limit login Portal 20/menit **per IP** — jika semua login lewat server PM-App, satu IP itu akan terkena 429 saat pergantian shift;
-2. password tidak pernah melewati server PM-App;
-3. TOTP Portal bisa ditangani langsung oleh aplikasi.
+Keputusan user (5 Okt 2026): mobile memakai **otentikasi sendiri** dengan data user Portal, agar tokennya bisa
+**permanen**. Authorization Code + PKCE tidak bisa dipakai karena Portal bukan server OAuth2 (§1–2).
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as Teknisi
     participant M as PM-App Android (Expo)
+    participant BE as pm-api
     participant PB as Portal BE
-    participant BE as PM-App BE
-    U->>M: email + password (form login di aplikasi)
-    M->>PB: POST /api/auth/login {email, password}
+    U->>M: email atau NRK + password
+    M->>BE: POST /api/v1/auth/mobile/login {login, password, device_name}
+    BE->>BE: NRK → email (direktori lokal hasil portal:sync)
+    BE->>PB: POST /api/auth/login {email, password}
     alt akun memakai TOTP
-        PB-->>M: {requiresTotp, totpToken}
+        PB-->>BE: {requiresTotp, totpToken}
+        BE-->>M: {requires_totp: true, totp_token}
         U->>M: kode 6 digit
-        M->>PB: POST /api/auth/login/totp-verify {totpToken, code}
+        M->>BE: POST /api/v1/auth/mobile/totp {totp_token, code, device_name}
+        BE->>PB: POST /api/auth/login/totp-verify
     end
-    PB-->>M: {accessToken (JWT Portal), refreshToken}
-    M->>PB: GET /api/sso/token?app_id=PM_APP_ID (Bearer accessToken)
-    PB->>PB: cek access_mode (hak akses PM-App)
-    PB-->>M: {token SSO 5 menit}
-    M->>M: buang accessToken & refreshToken Portal dari memori
-    M->>BE: POST /api/v1/auth/mobile/exchange {sso_token, device_name, push_token}
-    BE->>PB: POST /api/sso/verify {token, app_id}
-    PB-->>BE: profil user
-    BE->>BE: upsert users, createToken(device_name, expires 30 hari), simpan push token
-    BE-->>M: {token, expires_at, user}
-    M->>M: SecureStore.setItem(token)
+    PB-->>BE: {accessToken Portal}
+    BE->>PB: GET /api/sso/token?app_id (Bearer) — cek hak akses aplikasi
+    BE->>PB: POST /api/sso/verify — profil terbaru
+    BE->>BE: upsert users, buang token Portal, createToken(device_name) TANPA kedaluwarsa
+    BE-->>M: {token, user}
+    M->>M: SecureStore
+    M->>BE: POST /api/v1/push-subscriptions {channel: expo, token}
     Note over M,BE: Semua request: Authorization: Bearer <token PM-App>
     U->>M: Logout
-    M->>BE: POST /api/v1/auth/logout (cabut token & push token perangkat ini)
-    Note over M,PB: JANGAN panggil logout Portal (mematikan semua sesi Portal user)
+    M->>BE: POST /api/v1/auth/logout → cabut token + push token perangkat ini
+    Note over BE,PB: pm-api TIDAK PERNAH memanggil logout Portal (mematikan semua sesi Portal user)
 ```
 
-Detail:
-- Login Portal hanya menerima **email** (`validators/auth.validator.ts:4-7`), bukan NRK. Passkey tidak dipakai di mobile (Q-33).
-- Token Portal hanya ada di memori beberapa detik dan **tidak disimpan**. Refresh token Portal yang ikut terbit tidak dipakai
-  dan kedaluwarsa sendiri (7 hari).
-- Token PM-App: Sanctum personal access token, 30 hari, satu per perangkat, dicabut saat logout/user nonaktif.
-  Saat kedaluwarsa (401), aplikasi kembali ke layar login.
-- HP harus bisa menjangkau Portal BE (`PORTAL_API_URL`) dan PM-App BE melalui HTTPS (internet atau VPN pabrik).
-- Lupa password: tombol yang membuka halaman reset Portal di browser (PM-App tidak punya alur reset sendiri).
+Detail (lihat `pm-api/app/Services/Auth/MobileAuthService.php`):
+- Password hanya diteruskan ke Portal melalui HTTPS; tidak disimpan maupun di-log. Portal tetap satu-satunya pemeriksa
+  password (termasuk TOTP). Passkey tidak didukung di mobile (Q-33).
+- Token PM-App **tidak kedaluwarsa** (`sanctum.expiration = null`), satu per perangkat. Dicabut saat: logout dari
+  perangkat itu, atau user dinonaktifkan (middleware `active` menolak & menghapus semua tokennya). User dinonaktifkan
+  otomatis oleh `portal:sync` harian bila tidak lagi dikembalikan Portal.
+- Rate limit: 5 percobaan/menit per (login, IP) dan 15/menit per IP. Karena token permanen, login jarang terjadi,
+  sehingga batas Portal (20 login/menit per IP server pm-api) praktis tidak tercapai.
+- Konsekuensi yang disadari: ganti password di Portal **tidak** mencabut token mobile yang sudah ada; cabut lewat
+  nonaktifkan user atau logout di perangkat.
+- Lupa password: tombol yang membuka halaman reset Portal di browser.
 
 ## 6. Konfigurasi `.env`
 
-**PM-App BE (`be/.env`)**
+**PM-App BE (`pm-api/.env`)**
 
 ```dotenv
 APP_URL=https://pm.inl.co.id
@@ -222,11 +218,10 @@ SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=lax
 
 # Mobile
-MOBILE_TOKEN_TTL_DAYS=30
 EXPO_ACCESS_TOKEN=                                # untuk Expo Push API (alarm Android)
 ```
 
-**PM-App FE (`fe/.env`)**
+**PM-App FE (`pm-web/.env`)**
 
 ```dotenv
 BACKEND_URL=http://pm-be:8000                     # target proxy /api & /sanctum (jaringan Docker)
@@ -236,11 +231,9 @@ NEXT_PUBLIC_PORTAL_HOME_URL=https://portal.inl.co.id
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 ```
 
-**PM-App Mobile (`mobile/.env`, Expo)**
+**PM-App Mobile (`pm-mobile/.env`, Expo)**
 
 ```dotenv
-EXPO_PUBLIC_PORTAL_API_URL=https://portal-api.inl.co.id
-EXPO_PUBLIC_PORTAL_APP_ID=00000000-0000-0000-0000-000000000000
 EXPO_PUBLIC_PM_API_URL=https://pm.inl.co.id/api/v1
 EXPO_PUBLIC_PORTAL_FORGOT_PASSWORD_URL=https://portal.inl.co.id/reset-password
 ```
@@ -256,7 +249,7 @@ Atas izin Anda (Q-35), hanya **penambahan** no HP & status karyawan; tidak ada f
 | File | Perubahan |
 |---|---|
 | `portal-app-be/src/services/sso.service.ts` | import `refStatusKaryawan`; `leftJoin` ke `ref_status_karyawan`; payload `employee.nomorHp`, `employee.statusKaryawan {id,kode,label}`, `employee.atasan.nomorHp`; komentar data sensitif diperbarui |
-| `portal-app-be/src/routes/sso.route.ts` | `GET /api/sso/employees`: tambah `nomorHp`, `statusKaryawanKode`, `statusKaryawanLabel` + `leftJoin` |
+| `portal-app-be/src/routes/sso.route.ts` | `GET /api/sso/employees`: tambah `nrk`, `email`, `unitId`, `unitKode`, `unitParentId`, `nomorHp`, `statusKaryawanKode`, `statusKaryawanLabel` + `leftJoin` (izin user 5 Okt 2026) |
 
 Aman untuk klien lama: IDAS membaca payload sebagai array PHP dan MeeTrip memakai cast TypeScript tanpa validasi ketat,
 sehingga key tambahan diabaikan. Silakan commit di repo Portal setelah Anda review (`git diff` di `portal-app-be`).

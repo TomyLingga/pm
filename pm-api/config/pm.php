@@ -29,6 +29,22 @@ return [
         ],
     ],
 
+    'service_request' => [
+        // Approvers waiting longer than this get an alarm reminder (repeated every interval).
+        'reminder_hours' => (int) env('PM_APPROVAL_REMINDER_HOURS', 24),
+
+        'document' => [
+            'company' => 'PT. INDUSTRI NABATI LESTARI',
+            'subtitle' => 'PABRIK MINYAK GORENG',
+            'address' => 'Kantor Pusat : Komp. KEK Sei Mangkei, Kav.2-3, Kec. Bosar Maligas, Kab. Simalungun, Sumatera Utara, 21184',
+            'title' => 'FORM REQUEST',
+            'number' => env('PM_REQ_DOC_NUMBER', 'INLHO/BSIS-ITC/F-004'),
+            'effective_date' => env('PM_REQ_DOC_EFFECTIVE_DATE', '04-Mei-22'),
+            'revision' => env('PM_REQ_DOC_REVISION', '01'),
+            'version_note' => env('PM_REQ_DOC_VERSION_NOTE', 'versi dokumen : 1/Agustus 2019'),
+        ],
+    ],
+
     'attachments' => [
         'disk' => env('PM_ATTACHMENT_DISK', 'local'),
         'max_files' => 10,
