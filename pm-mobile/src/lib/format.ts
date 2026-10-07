@@ -3,6 +3,20 @@
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+export const MONTH_NAMES = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
 
 const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
 
@@ -126,4 +140,48 @@ export function formatNumber(value: number | string | null | undefined): string 
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) return '';
   return String(n).replace('.', ',');
+}
+
+// ---- Date-only values ("Y-m-d", no timezone: activity_date, target_date, closed_date) ----
+
+const YMD = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** "2026-10-03" → "03 Okt 2026" (parsed as a calendar date, never shifted by timezone). */
+export function formatYmd(ymd: string | null | undefined): string {
+  if (!ymd) return '-';
+  const m = YMD.exec(ymd);
+  if (!m) return formatDate(ymd);
+  const month = Number(m[2]) - 1;
+  return MONTHS[month] ? `${m[3]} ${MONTHS[month]} ${m[1]}` : '-';
+}
+
+/** Calendar date picked on the device → "Y-m-d" (local getters, so the picked day is kept). */
+export function toYmd(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** "Y-m-d" → Date at local noon (safe for the native date picker in any timezone). */
+export function fromYmd(ymd: string | null | undefined): Date | null {
+  if (!ymd) return null;
+  const m = YMD.exec(ymd);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Today's calendar date in WIB, as { year, month (1-12), day }. */
+export function todayWib(): { year: number; month: number; day: number } {
+  const d = new Date(Date.now() + WIB_OFFSET_MS);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+}
+
+/** Today's calendar date in WIB as "Y-m-d". */
+export function todayYmd(): string {
+  const t = todayWib();
+  return `${t.year}-${pad(t.month)}-${pad(t.day)}`;
+}
+
+/** (2026, 10) → "Oktober 2026" */
+export function formatMonthYear(year: number, month: number): string {
+  return `${MONTH_NAMES[month - 1] ?? month} ${year}`;
 }

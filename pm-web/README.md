@@ -133,23 +133,27 @@ Agar sesi cookie berjalan lewat proxy, `pm-api` perlu (lihat `docs/SSO.md` §6):
 | `/pm/tasks/[id]` | staf pelaksana | Form pengerjaan checklist (mobile-first): pratinjau sebelum mulai, tombol OK / Tidak OK / N/A besar, isian angka dengan batas min–max, foto per butir dari kamera (`capture="environment"`), auto-save, "Buat WO dari temuan" pada butir Tidak OK, material, Selesaikan, Usulkan Lewati / Lewati / Ganti PIC sesuai `permissions`, riwayat |
 | `/pm/calendar` | staf pelaksana | Kalender PM bulan/minggu (agenda per hari di HP), filter unit/equipment/PIC, chip berwarna per status, proyeksi di luar horizon (garis putus-putus) |
 | `/pm/schedules`, `/pm/schedules/new`, `/pm/schedules/[id]`, `/pm/schedules/[id]/edit` | pimpinan (tulis) | Jadwal PM: nama, unit, template, equipment (multi-pilih), frekuensi + interval, mulai/berakhir, toleransi, jendela H-n, PIC; pratinjau tanggal (`/pm-schedules/preview`); detail dengan jumlah tugas per status |
+| `/programs` | login | Program Kerja Tahunan (`GET /work-programs`): pemilih tahun (`meta.years`), filter unit (`meta.org_units`) dan status, pencarian, kartu program (kode, judul, unit, progress %, hitungan status kegiatan), tombol "Buat Program" bila `meta.can_create`. Terlihat sesuai cabang organisasi (staf seksi melihat program seksi dan sub bagian/bagian di atasnya; Kasubag/Kabag melihat semua di bawahnya) |
+| `/programs/[id]` | login | Detail program: header + progress + pemilih tahun (`siblings`, program unit yang sama di tahun lain), sub-item (A.1, A.2, …), tabel kegiatan (No, Project/Kegiatan, Action to be taken, PIC utama & pendukung, Target, Closed, Status, Remarks, Aksi), dialog tambah/ubah sub-item & kegiatan, update progress, ubah status + catatan; klik judul kegiatan atau "Lihat riwayat" membuka dialog detail kegiatan dengan riwayat per kegiatan (`GET /work-program-activities/{id}`); riwayat program dilipat di bawah; Export Excel; aksi mengikuti `permissions` |
+| `/activities` | login | Aktivitas Harian (`GET /daily-activities`): tab Saya / Tim / Semua sesuai `available_scopes`; chip status multi-pilih (Semua / OPEN / ON PROGRESS / CLOSED, default OPEN + ON PROGRESS, URL `status=all` untuk semua), rentang tanggal hanya saat pilihan mencakup CLOSED atau Semua (default tanggal 1 bulan ini s/d hari ini; laporan open/on progress selalu tampil), minggu M1-M5, PIC (scope tim) + pencarian, tile ringkasan Total/Closed/On Progress/Open (klik = pilih status itu), tabel (No, Minggu, Laporan kegiatan, Tindak lanjut, Kendala, Tanggal, Status, PIC, Waktu upload, Aksi) / kartu di HP dengan chip "WO <nomor>" untuk laporan otomatis dari WO selesai, tambah/ubah/update status/hapus, detail dengan riwayat dan blok Work Order sumber, Export Excel, Import Excel (`components/common/import-dialog.tsx`: unduh template, unggah, pesan per baris) |
 | `/pm/templates`, `/pm/templates/new`, `/pm/templates/[id]` | pimpinan (tulis) | Template checklist: editor butir (seksi, uraian, jenis isian, satuan/min/max, wajib, foto wajib, urutan), duplikat |
-| `/equipment`, `/equipment/[id]` | staf pelaksana | Master equipment (tambah/ubah oleh pimpinan, lokasi baru inline) dan **riwayat maintenance** per alat (PM + WO) |
+| `/equipment`, `/equipment/[id]` | staf pelaksana | Master equipment (tambah/ubah oleh pimpinan, lokasi baru inline, **Import Excel** dengan unduh template `GET /equipment/import-template` dan unggah ke `POST /equipment/import`) dan **riwayat maintenance** per alat (PM + WO) |
 | `/sso/verify` | publik | Penukaran token SSO Portal → sesi |
 | `/verifikasi/[token]` | publik | Verifikasi tanda tangan elektronik dari QR di PDF |
 | `/akses-ditolak` | publik | Informasi belum login / sesi berakhir |
 
 Tab yang berkaitan dengan unit pelaksana hanya tampil bila `me.executor_units` tidak kosong: "Pool", "Ditugaskan ke Saya",
-dan "Unit Pelaksana" untuk WO, serta "Unit Pelaksana" untuk Form Request. Tab "Semua" hanya untuk role `admin`/`management`.
+dan "Unit Pelaksana" untuk WO, serta "Unit Pelaksana" untuk Form Request. Tab "Semua" hanya untuk admin.
 Tombol aksi di detail **hanya** mengikuti `permissions` dari server.
 
-Sidebar memuat menu Dashboard, Work Order, Form Request, "Menunggu Persetujuan", dan grup Preventive Maintenance;
+Sidebar memuat menu Dashboard, Work Order, Form Request, "Menunggu Persetujuan", grup Preventive Maintenance,
+grup "Program & Aktivitas" (Program Kerja Tahunan, Aktivitas Harian), Papan Monitor, dan Pengaturan;
 pengaturan notifikasi ada di menu pengguna (pojok kanan atas). Badge di menu "Menunggu Persetujuan" berasal dari
 `GET /approvals/pending-count` (polling 60 detik). Detail WO menampilkan tombol "Alihkan ke Form Request" bila
 `permissions.can_convert`. Setelah berhasil, pengguna diarahkan ke Form Request draf yang baru dibuat. Notifikasi
 diarahkan berdasarkan `document_type`/`document_id`: `service_request` → `/requests/{id}`, `work_order` → `/work-orders/{id}`,
-`pm_task` → `/pm/tasks/{id}`. Grup menu "Preventive Maintenance" (badge = tugas jatuh tempo + terlambat dari
-`GET /pm-tasks/summary`) hanya tampil untuk anggota unit pelaksana atau role `admin`/`management`.
+`pm_task` → `/pm/tasks/{id}`, `work_program` → `/programs/{id}`. Grup menu "Preventive Maintenance" (badge = tugas jatuh tempo + terlambat dari
+`GET /pm-tasks/summary`) hanya tampil untuk anggota unit pelaksana atau admin.
 
 ## Struktur folder
 

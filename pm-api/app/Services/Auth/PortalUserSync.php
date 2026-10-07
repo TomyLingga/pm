@@ -7,6 +7,7 @@ use App\Models\OrgUnit;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 /**
  * Upserts the local user (and its org-unit chain) from a Portal `/api/sso/verify` payload.
@@ -53,9 +54,20 @@ class PortalUserSync
                 : null;
 
             $user->save();
+            $this->bootstrapAdmin($user);
 
             return $user;
         });
+    }
+
+    /** First admin of a fresh install: NRKs listed in PM_BOOTSTRAP_ADMIN_NRKS get the role on login. */
+    private function bootstrapAdmin(User $user): void
+    {
+        if (! $user->nrk || ! in_array((string) $user->nrk, config('pm.bootstrap_admin_nrks', []), true) || $user->isAdmin()) {
+            return;
+        }
+        Role::findOrCreate(User::ROLE_ADMIN, 'web');
+        $user->assignRole(User::ROLE_ADMIN);
     }
 
     /**

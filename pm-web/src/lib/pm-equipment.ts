@@ -7,7 +7,7 @@ import type {
   EquipmentPayload,
   HistoryEntry,
 } from "@/types/pm";
-import { api, unwrap } from "./api";
+import { API_PREFIX, api, unwrap } from "./api";
 
 const BASE = "/equipment";
 
@@ -44,6 +44,11 @@ export function updateEquipment(id: number, payload: EquipmentPayload): Promise<
 /** 409 while the equipment is still used by an active PM schedule. */
 export function deleteEquipment(id: number): Promise<void> {
   return api.delete<void>(`${BASE}/${id}`);
+}
+
+/** Absolute URL of the xlsx import template (sheets Data, Contoh, Petunjuk, Lokasi, Unit Pelaksana). */
+export function equipmentImportTemplateUrl(): string {
+  return `${API_PREFIX}${BASE}/import-template`;
 }
 
 /** Maintenance history (PM tasks + work orders), newest first. */

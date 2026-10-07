@@ -199,6 +199,9 @@ class ServiceRequestService
                 if (! $assignee || (int) $assignee->id === (int) $request->requester_id) {
                     throw ValidationException::withMessages(['assigned_executor_id' => ['Pelaksana harus anggota unit pelaksana dan bukan pemohon.']]);
                 }
+                if (! $this->directory->canDelegateTo($approver, $assignee)) {
+                    throw ValidationException::withMessages(['assigned_executor_id' => ['Pelaksana hanya boleh grade di bawah Anda.']]);
+                }
             }
 
             $next = $this->engine->decide($step, $approver, ApprovalStepStatus::Approved, $notes);

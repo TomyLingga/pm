@@ -5,8 +5,10 @@ use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ChecklistTemplateController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DailyActivityController;
 use App\Http\Controllers\Api\V1\ServiceCategoryController;
 use App\Http\Controllers\Api\V1\UserAccessController;
+use App\Http\Controllers\Api\V1\WorkProgramController;
 use App\Http\Controllers\Api\V1\EquipmentController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\PmScheduleController;
@@ -46,6 +48,8 @@ Route::prefix('v1')->group(function () {
         // Equipment master + maintenance history
         Route::get('equipment', [EquipmentController::class, 'index']);
         Route::post('equipment', [EquipmentController::class, 'store']);
+        Route::get('equipment/import-template', [EquipmentController::class, 'importTemplate']);
+        Route::post('equipment/import', [EquipmentController::class, 'import']);
         Route::get('equipment/{equipment}', [EquipmentController::class, 'show']);
         Route::put('equipment/{equipment}', [EquipmentController::class, 'update']);
         Route::delete('equipment/{equipment}', [EquipmentController::class, 'destroy']);
@@ -146,6 +150,36 @@ Route::prefix('v1')->group(function () {
         Route::put('notifications/preferences', [NotificationController::class, 'updatePreferences']);
         Route::get('dashboard', [DashboardController::class, 'show']);
         Route::get('dashboard/live', [DashboardController::class, 'live']);
+
+        // Program Kerja Tahunan
+        Route::get('work-programs/units', [WorkProgramController::class, 'units']);
+        Route::get('work-programs/people', [WorkProgramController::class, 'people']);
+        Route::get('work-programs', [WorkProgramController::class, 'index']);
+        Route::post('work-programs', [WorkProgramController::class, 'store']);
+        Route::get('work-programs/{workProgram}', [WorkProgramController::class, 'show']);
+        Route::put('work-programs/{workProgram}', [WorkProgramController::class, 'update']);
+        Route::delete('work-programs/{workProgram}', [WorkProgramController::class, 'destroy']);
+        Route::get('work-programs/{workProgram}/export', [WorkProgramController::class, 'export']);
+        Route::post('work-programs/{workProgram}/items', [WorkProgramController::class, 'storeItem']);
+        Route::put('work-program-items/{workProgramItem}', [WorkProgramController::class, 'updateItem']);
+        Route::delete('work-program-items/{workProgramItem}', [WorkProgramController::class, 'destroyItem']);
+        Route::post('work-program-items/{workProgramItem}/activities', [WorkProgramController::class, 'storeActivity']);
+        Route::get('work-program-activities/{workProgramActivity}', [WorkProgramController::class, 'showActivity']);
+        Route::put('work-program-activities/{workProgramActivity}', [WorkProgramController::class, 'updateActivity']);
+        Route::post('work-program-activities/{workProgramActivity}/status', [WorkProgramController::class, 'setActivityStatus']);
+        Route::delete('work-program-activities/{workProgramActivity}', [WorkProgramController::class, 'destroyActivity']);
+
+        // Aktivitas Harian
+        Route::get('daily-activities/export', [DailyActivityController::class, 'export']);
+        Route::get('daily-activities/people', [DailyActivityController::class, 'people']);
+        Route::get('daily-activities/import-template', [DailyActivityController::class, 'importTemplate']);
+        Route::post('daily-activities/import', [DailyActivityController::class, 'import']);
+        Route::get('daily-activities', [DailyActivityController::class, 'index']);
+        Route::post('daily-activities', [DailyActivityController::class, 'store']);
+        Route::get('daily-activities/{dailyActivity}', [DailyActivityController::class, 'show']);
+        Route::put('daily-activities/{dailyActivity}', [DailyActivityController::class, 'update']);
+        Route::post('daily-activities/{dailyActivity}/status', [DailyActivityController::class, 'setStatus']);
+        Route::delete('daily-activities/{dailyActivity}', [DailyActivityController::class, 'destroy']);
         Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
         Route::post('notifications/{id}/read', [NotificationController::class, 'read']);
         Route::post('push-subscriptions', [NotificationController::class, 'subscribe']);

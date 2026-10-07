@@ -107,7 +107,12 @@ class LookupController extends Controller
 
         return response()->json(['data' => $staff->map(fn (User $s) => array_merge(
             (new UserBriefResource($s))->toArray($request),
-            ['grade_code' => $s->grade_code, 'is_lead' => $directory->hasLeadGrade($s)],
+            [
+                'grade_code' => $s->grade_code,
+                'is_lead' => $directory->hasLeadGrade($s),
+                // Delegation only goes downwards: assignment pickers hide the rest.
+                'assignable' => $directory->canDelegateTo($user, $s),
+            ],
         ))->values()]);
     }
 

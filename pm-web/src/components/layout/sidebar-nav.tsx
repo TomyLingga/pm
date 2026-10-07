@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  CalendarCheck2,
   CalendarClock,
   CalendarDays,
   ChevronRight,
@@ -17,6 +18,7 @@ import {
   FileText,
   Inbox,
   LayoutDashboard,
+  ListTodo,
   ListChecks,
   MonitorPlay,
   ShieldCheck,
@@ -127,6 +129,15 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/pm/schedules", label: "Jadwal PM", icon: CalendarClock, isActive: (path) => isUnder(path, "/pm/schedules") },
       { href: "/pm/templates", label: "Template Checklist", icon: ListChecks, isActive: (path) => isUnder(path, "/pm/templates") },
       { href: "/equipment", label: "Equipment", icon: Cog, isActive: (path) => isUnder(path, "/equipment") },
+    ],
+  },
+  {
+    key: "programs",
+    title: "Program & Aktivitas",
+    icon: ListTodo,
+    items: [
+      { href: "/programs", label: "Program Kerja Tahunan", icon: ListTodo, isActive: (path) => isUnder(path, "/programs") },
+      { href: "/activities", label: "Aktivitas Harian", icon: CalendarCheck2, isActive: (path) => isUnder(path, "/activities") },
     ],
   },
   {

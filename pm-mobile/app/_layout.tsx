@@ -37,7 +37,7 @@ function AuthGate() {
   return null;
 }
 
-/** Opens the WO / Form Request / PM task from a tapped notification (foreground, background and cold start). */
+/** Opens the WO / Form Request / PM task / work programme from a tapped notification (foreground, background and cold start). */
 function NotificationRouter() {
   const { status } = useAuth();
   const router = useRouter();
@@ -77,6 +77,8 @@ function NotificationRouter() {
       // pm_task.upcoming / due / overdue / skipped / reassigned → refresh PM lists and the tab badge.
       void queryClient.invalidateQueries({ queryKey: queryKeys.pmTasks });
       void queryClient.invalidateQueries({ queryKey: queryKeys.pmSummary });
+      // work_program.assigned → the programme list / detail gains an activity with me as PIC.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.programs });
       const ref = documentRefFromNotification(notification);
       if (ref) void queryClient.invalidateQueries({ queryKey: documentQueryKey(ref) });
     });
@@ -113,6 +115,10 @@ export default function RootLayout() {
             <Stack.Screen name="requests/[id]/edit" options={{ title: 'Ubah Form Request' }} />
             <Stack.Screen name="pm-tasks/[id]/index" options={{ title: 'Tugas PM' }} />
             <Stack.Screen name="equipment/[id]/history" options={{ title: 'Riwayat Alat' }} />
+            <Stack.Screen name="activities/new" options={{ title: 'Tambah Aktivitas' }} />
+            <Stack.Screen name="activities/[id]" options={{ title: 'Detail Aktivitas' }} />
+            <Stack.Screen name="programs/index" options={{ title: 'Program Kerja Tahunan' }} />
+            <Stack.Screen name="programs/[id]" options={{ title: 'Detail Program Kerja' }} />
           </Stack>
         </AuthProvider>
       </QueryClientProvider>

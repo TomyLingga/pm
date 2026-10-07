@@ -69,6 +69,8 @@ function StaffSkeleton() {
 
 function AssignForm({ wo, mode, onDone }: { wo: WorkOrderDetail; mode: AssignMode; onDone: () => void }) {
   const staff = useExecutorStaff(wo.executor_unit.id);
+  // Delegation only goes downwards: people above my grade are not offered.
+  const assignable = React.useMemo(() => (staff.data ?? []).filter((person) => person.assignable), [staff.data]);
   const [selected, setSelected] = React.useState<number[]>(() =>
     mode === "reassign" ? wo.assignees.map((a) => a.id) : [],
   );
@@ -130,13 +132,13 @@ function AssignForm({ wo, mode, onDone }: { wo: WorkOrderDetail; mode: AssignMod
           <StaffSkeleton />
         ) : staff.isError ? (
           <ErrorState title="Gagal memuat staf" message={errorMessage(staff.error)} onRetry={() => staff.refetch()} />
-        ) : staff.data.length === 0 ? (
+        ) : assignable.length === 0 ? (
           <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
             Unit ini belum memiliki staf.
           </p>
         ) : (
           <ul className="max-h-[45dvh] divide-y overflow-y-auto overscroll-contain rounded-md border">
-            {staff.data.map((person) => {
+            {assignable.map((person) => {
               const checked = selected.includes(person.id);
               const isLead = leadId === person.id;
               return (

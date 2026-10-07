@@ -10,7 +10,7 @@
     "export:android": "expo export --platform android",
     "ios": "expo run:ios",
     "prebuild:android": "expo prebuild --platform android --clean",
-    "build:apk": "npm run prebuild:android && cd android && gradlew assembleRelease && cd .. && node scripts/copy-apk.js"
+    "build:apk": "node scripts/build-apk.js"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",

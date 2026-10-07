@@ -120,7 +120,7 @@ export async function unregisterPush(): Promise<void> {
   }
 }
 
-/** Resolves the target document (work order, Form Request or PM task) from a notification's data payload. */
+/** Resolves the target document (work order, Form Request, PM task or work programme) from a notification's data payload. */
 export function documentRefFromNotification(notification: Notifications.Notification): DocumentRef | null {
   return documentRefFrom(notification.request.content.data as Record<string, unknown> | undefined);
 }

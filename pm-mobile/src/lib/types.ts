@@ -325,15 +325,15 @@ export interface PaginationMeta {
   to: number | null;
 }
 
-export interface Paginated<T> {
+export interface Paginated<T, M extends PaginationMeta = PaginationMeta> {
   data: T[];
   links?: Record<string, string | null>;
-  meta: PaginationMeta;
+  meta: M;
 }
 
 // ---- Notifications ----
 
-export type DocumentType = 'work_order' | 'service_request' | 'pm_task';
+export type DocumentType = 'work_order' | 'service_request' | 'pm_task' | 'work_program';
 
 export interface AppNotification {
   id: number | string;
@@ -345,6 +345,8 @@ export interface AppNotification {
   document_id?: number | null;
   service_request_id?: number | null;
   pm_task_id?: number | null;
+  /** `work_program.assigned` (API_PROGRAM_ACTIVITY.md §2). */
+  work_program_id?: number | null;
   alarm: boolean;
   read_at: string | null;
   created_at: string;
@@ -678,3 +680,224 @@ export interface HistoryEntry {
   /** null for work orders. */
   is_late: boolean | null;
 }
+
+// ======================================================================
+// Program Kerja Tahunan & Aktivitas Harian (docs/API_PROGRAM_ACTIVITY.md)
+// ======================================================================
+
+export type WorkProgramStatus = 'active' | 'closed';
+
+export type ProgramActivityStatus = 'open' | 'on_progress' | 'closed' | 'cancelled';
+
+export type ProgramPicRole = 'utama' | 'pendukung';
+
+export type DailyActivityStatus = 'open' | 'on_progress' | 'closed';
+
+export type DailyActivityScope = 'mine' | 'team' | 'all';
+
+/** 1 (tgl 1-7) · 2 (8-14) · 3 (15-21) · 4 (22-28) · 5 (29-31) */
+export type WeekOfMonth = 1 | 2 | 3 | 4 | 5;
+
+export interface ProgramOrgUnit {
+  id: number;
+  code: string;
+  name: string;
+  type: string;
+}
+
+export interface StatusCounts {
+  open: number;
+  on_progress: number;
+  closed: number;
+  cancelled: number;
+}
+
+export interface WorkProgramListItem {
+  id: number;
+  year: number;
+  code: string;
+  title: string;
+  description: string | null;
+  status: WorkProgramStatus;
+  status_label: string;
+  org_unit: ProgramOrgUnit;
+  items_count: number;
+  activities_count: number;
+  counts: StatusCounts;
+  /** Average of the activities' `progress_pct`; null when the programme has no activity yet. */
+  progress_pct: number | null;
+  created_by: UserBrief | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkProgramListMeta {
+  year: number;
+  years: number[];
+  org_units: ProgramOrgUnit[];
+  can_create: boolean;
+}
+
+export interface WorkProgramListResponse {
+  data: WorkProgramListItem[];
+  meta: WorkProgramListMeta;
+}
+
+export interface ProgramActivityPic extends UserBrief {
+  role: ProgramPicRole;
+}
+
+export interface ProgramActivityPermissions {
+  can_edit: boolean;
+  can_update_progress: boolean;
+  can_change_status: boolean;
+  can_delete: boolean;
+}
+
+export interface ProgramActivity {
+  id: number;
+  work_program_item_id: number;
+  sequence: number;
+  title: string;
+  action_plan: string | null;
+  /** Y-m-d */
+  target_date: string | null;
+  /** Y-m-d */
+  closed_date: string | null;
+  status: ProgramActivityStatus;
+  status_label: string;
+  progress_pct: number;
+  remarks: string | null;
+  pics: ProgramActivityPic[];
+  daily_activities_count: number;
+  updated_at: string;
+  permissions: ProgramActivityPermissions;
+}
+
+export interface ProgramActivityDetail extends ProgramActivity {
+  logs: WorkOrderLog[];
+}
+
+export interface WorkProgramItem {
+  id: number;
+  code: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  activities_count: number;
+  counts: StatusCounts;
+  progress_pct: number | null;
+  activities: ProgramActivity[];
+}
+
+export interface WorkProgramPermissions {
+  can_manage: boolean;
+  can_add_activity: boolean;
+}
+
+export interface WorkProgramDetail extends WorkProgramListItem {
+  items: WorkProgramItem[];
+  logs: WorkOrderLog[];
+  permissions: WorkProgramPermissions;
+}
+
+/** PIC may only change these (`PUT /work-program-activities/{id}`). */
+export interface ProgramActivityProgressBody {
+  progress_pct?: number;
+  remarks?: string | null;
+}
+
+export interface ProgramActivityStatusBody {
+  status: ProgramActivityStatus;
+  notes?: string;
+  /** Y-m-d, defaults to today when closing. */
+  closed_date?: string;
+}
+
+export interface DailyActivityProgramLink {
+  id: number;
+  title: string;
+  item_code: string;
+  item_title: string;
+  program_id: number;
+  program_code: string;
+  program_title: string;
+}
+
+/** Work order a report was generated from when the technician completed it (API_PROGRAM_ACTIVITY.md §3). */
+export interface DailyActivityWorkOrderLink {
+  id: number;
+  wo_number: string;
+  status: WorkOrderStatus;
+  request_description: string | null;
+}
+
+export interface DailyActivity {
+  id: number;
+  /** Y-m-d */
+  activity_date: string;
+  week_of_month: WeekOfMonth;
+  title: string;
+  description: string;
+  follow_up: string | null;
+  obstacles: string | null;
+  status: DailyActivityStatus;
+  status_label: string;
+  closed_at: string | null;
+  user: UserBrief;
+  org_unit: { id: number; code: string; name: string } | null;
+  program_activity: DailyActivityProgramLink | null;
+  /** Set on reports created automatically from a completed work order. */
+  work_order?: DailyActivityWorkOrderLink | null;
+  created_by: UserBrief | null;
+  /** Upload time. */
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyActivityPermissions {
+  can_update: boolean;
+  can_delete: boolean;
+}
+
+export interface DailyActivityDetail extends DailyActivity {
+  logs: WorkOrderLog[];
+  permissions: DailyActivityPermissions;
+}
+
+export interface DailyActivitySummary {
+  total: number;
+  open: number;
+  on_progress: number;
+  closed: number;
+}
+
+export interface DailyActivityListMeta extends PaginationMeta {
+  summary: DailyActivitySummary;
+  scope: DailyActivityScope;
+  available_scopes: DailyActivityScope[];
+  can_report_for_others: boolean;
+}
+
+/** `GET /daily-activities/people` (also used as the "Atas nama" picker). */
+export interface DailyActivityPerson extends UserBrief {
+  grade_code?: string | null;
+  org_unit?: { id: number; name: string } | null;
+}
+
+export interface DailyActivityBody {
+  activity_date: string;
+  title: string;
+  description: string;
+  follow_up?: string | null;
+  obstacles?: string | null;
+  status?: DailyActivityStatus;
+  /** Report on behalf of a subordinate (leaders only). */
+  user_id?: number;
+  work_program_activity_id?: number;
+}
+
+export type DailyActivityUpdateBody = Pick<
+  DailyActivityBody,
+  'activity_date' | 'title' | 'description' | 'follow_up' | 'obstacles' | 'work_program_activity_id'
+>;

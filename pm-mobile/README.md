@@ -8,10 +8,15 @@ Aplikasi Android PrevenTech PT Industri Nabati Lestari:
 - **Preventive Maintenance** — teknisi mengerjakan tugas PM: checklist (OK / Tidak OK / N/A, angka dengan batas,
   teks), foto per butir, material, buat WO dari temuan, riwayat maintenance per alat. Pembuatan jadwal, template
   checklist dan master alat tetap di aplikasi web.
+- **Aktivitas Harian**: laporan kegiatan harian per orang (bulan, minggu M1-M5, status Open / On Progress / Closed);
+  pimpinan melihat laporan tim dan dapat mencatat atas nama bawahan.
+- **Program Kerja Tahunan**: melihat program kerja unit (sub-item, kegiatan, PIC, target, progress) dan, sebagai
+  PIC, memperbarui progress / remarks / status kegiatan. Pembuatan program, sub-item dan kegiatan tetap di web.
 - Notifikasi push & alarm (WO prioritas Tinggi, tugas PM jatuh tempo/terlambat, pengingat persetujuan > 24 jam,
-  request ditolak/minta revisi).
+  request ditolak/minta revisi, penunjukan PIC kegiatan program kerja).
 
-Kontrak API yang diikuti: `../docs/API_WORK_ORDER.md`, `../docs/API_SERVICE_REQUEST.md` dan `../docs/API_PM.md`.
+Kontrak API yang diikuti: `../docs/API_WORK_ORDER.md`, `../docs/API_SERVICE_REQUEST.md`, `../docs/API_PM.md` dan
+`../docs/API_PROGRAM_ACTIVITY.md`.
 
 - Expo **SDK 52** · React Native 0.76 · TypeScript (strict) · expo-router 4 (file-based, tab)
 - Data: @tanstack/react-query v5 · Token disimpan di `expo-secure-store`
@@ -166,11 +171,12 @@ Saat login dan setiap aplikasi dibuka dengan token tersimpan, aplikasi:
    { channel: "expo", token, device_name }`.
 
 Backend memilih `channelId` = `alarm`/`default` dan mengirim
-`data = { event, document_type, document_id, work_order_id?, service_request_id?, pm_task_id? }`. Mengetuk notifikasi
-(aplikasi di depan, di belakang, maupun tertutup) — juga item di daftar notifikasi tab Akun — membuka **Detail WO**
-bila `document_type = work_order`, **Detail Form Request** bila `service_request`, atau **Tugas PM** bila `pm_task`
-(fallback ke `pm_task_id` / `service_request_id` / `work_order_id` bila tipe tidak dikirim). Notifikasi yang masuk
-saat aplikasi terbuka tetap ditampilkan dan daftar WO, Form Request, Persetujuan, serta daftar & badge PM dimuat ulang.
+`data = { event, document_type, document_id, work_order_id?, service_request_id?, pm_task_id?, work_program_id? }`.
+Mengetuk notifikasi (aplikasi di depan, di belakang, maupun tertutup) — juga item di daftar notifikasi tab Akun —
+membuka **Detail WO** bila `document_type = work_order`, **Detail Form Request** bila `service_request`, **Tugas PM**
+bila `pm_task`, atau **Detail Program Kerja** bila `work_program` (fallback ke `work_program_id` / `pm_task_id` /
+`service_request_id` / `work_order_id` bila tipe tidak dikirim). Notifikasi yang masuk saat aplikasi terbuka tetap
+ditampilkan dan daftar WO, Form Request, Persetujuan, program kerja, serta daftar & badge PM dimuat ulang.
 
 Penting tentang alarm:
 
@@ -186,8 +192,9 @@ Penting tentang alarm:
 ## 7. Form Request & Persetujuan
 
 Navigasi tab: **WO** (sakelar *Pool* / *Tugas Saya*) · **PM** — keduanya khusus anggota unit pelaksana ·
-**Pengajuan** (sakelar *Work Order* / *Form Request*, `scope=mine`) · **Persetujuan** (selalu tampil) · **Akun**.
-Pool dan Tugas Saya digabung dalam satu tab agar tab bar tetap lima tab setelah tab PM ditambahkan.
+**Pengajuan** (sakelar *Work Order* / *Form Request*, `scope=mine`) · **Aktivitas** (selalu tampil, lihat §9) ·
+**Persetujuan** (selalu tampil) · **Akun**. Pool dan Tugas Saya digabung dalam satu tab; staf non-pelaksana melihat
+empat tab, staf unit pelaksana enam tab.
 
 - **Persetujuan** — `GET /approvals/pending` (urut terlama dulu): nomor, jenis dokumen, judul, pemohon, langkah,
   prioritas, menunggu sejak, label merah **"Lewat 24 jam"** bila `overdue`. Badge tab dari
@@ -241,7 +248,44 @@ Pool dan Tugas Saya digabung dalam satu tab agar tab bar tetap lima tab setelah 
   nomor, tanggal, status, judul, pelaku, jumlah temuan, penanda terlambat); ketuk → detail tugas PM / WO.
 - **Detail WO** menampilkan "Dari temuan PM-… — …" (`source_pm_task`) yang membuka tugas PM asal.
 
-## 9. Struktur
+## 9. Aktivitas Harian & Program Kerja Tahunan
+
+Kontrak: `../docs/API_PROGRAM_ACTIVITY.md`. Visibilitas mengikuti pohon organisasi Portal (staf: milik sendiri;
+pimpinan BOM..BOM-3: subtree; admin: semua) dan ditentukan server lewat `meta` / `permissions`.
+
+- **Tab Aktivitas** (`(tabs)/activities`, semua pengguna): `GET /daily-activities`. Sakelar *Saya / Tim / Semua*
+  hanya tampil bila `meta.available_scopes` lebih dari satu; chip status **multi-pilih** *Semua / OPEN / ON PROGRESS /
+  CLOSED* (bawaan **OPEN + ON PROGRESS** → `status=open,on_progress`; *Semua* = tanpa parameter `status`). Periode
+  hanya membatasi laporan *closed* (laporan open / on progress selalu ditampilkan), sehingga navigator bulan (bawaan
+  bulan ini WIB, ketuk nama bulan untuk kembali ke bulan ini) dan parameter `year` + `month` hanya ada bila pilihan
+  mencakup CLOSED atau *Semua*; selain itu navigator disembunyikan dan diganti petunjuk satu baris. Chip minggu
+  *Semua, M1..M5* (`week`) berlaku pada kedua mode; pencarian; ringkasan **Total / Open / On Progress / Closed** dari
+  `meta.summary` (mengikuti filter aktif); daftar infinite scroll + tarik untuk memuat ulang. Kartu: tanggal + chip
+  minggu, judul, status, PIC (bila scope bukan *Saya*), uraian 2 baris, kegiatan program terkait, tag **WO <nomor>**
+  bila laporan dibuat otomatis dari penyelesaian WO (`work_order`), waktu unggah. Tombol **Tambah Aktivitas** dan
+  tombol header **Program Kerja**.
+- **Tambah / Ubah Aktivitas** (`activities/new`, `activities/new?id=`): Tanggal Kegiatan (pemilih tanggal), Laporan
+  Kegiatan (≤250), Uraian, Tindak Lanjut, Kendala, Status awal (hanya saat membuat), **Atas nama** (pemilih
+  `/daily-activities/people`, hanya bila `meta.can_report_for_others`). Dari lembar kegiatan program kerja tersedia
+  **Catat Aktivitas Harian** yang membuka form ini dengan `?program_activity_id=` (dikirim sebagai
+  `work_program_activity_id`). Simpan → `POST` / `PUT`, toast, kembali, daftar dimuat ulang. Konfirmasi bila keluar
+  dengan isian belum tersimpan.
+- **Detail Aktivitas** (`activities/[id]`): semua isian, kartu **Dari Work Order** (nomor, uraian permintaan, status
+  WO, keterangan bahwa laporan dibuat otomatis saat WO diselesaikan; ketuk → `work-orders/[id]`), kartu kegiatan
+  program kerja (ketuk → detail program), riwayat (`logs`). Aksi dari `permissions`: **Update Status** (status baru +
+  catatan → `POST /status`), **Ubah**, **Hapus** (konfirmasi → `DELETE`).
+- **Program Kerja** (`programs`): chip tahun dari `meta.years` (bawaan `meta.year`), kartu program: kode, judul,
+  unit, status, progress %, jumlah sub-item / kegiatan, hitungan status.
+- **Detail Program** (`programs/[id]`): header program + progress + hitungan; chip sub-item (*Semua* atau satu
+  sub-item); setiap kegiatan: nomor, judul, chip PIC (utama terisi, pendukung redup, "(Anda)" bila saya), target /
+  closed, status, bar progress, remarks; riwayat program. Ketuk kegiatan → lembar bawah: detail lengkap dan, bila
+  `permissions.can_update_progress` / `can_change_status`, **Update Progress** (stepper ±10 atau ketik 0-100 +
+  remarks → `PUT /work-program-activities/{id}`) dan **Ubah Status** (Open / On Progress / Closed / Dibatalkan +
+  catatan → `POST .../status`). Setelah sukses, kegiatan di cache detail diganti lalu program & daftar dimuat ulang
+  (rata-rata progress dihitung server). Tanpa izin, lembar bersifat baca saja. Pembuatan / pengubahan program,
+  sub-item, kegiatan dan PIC hanya di aplikasi web.
+
+## 10. Struktur
 
 ```
 app/
@@ -251,6 +295,7 @@ app/
   (tabs)/work.tsx          "WO": sakelar Pool (scope=pool) / Tugas Saya (scope=assigned) — staf pelaksana
   (tabs)/pm.tsx            "PM": tugas PM saya / unit — staf pelaksana
   (tabs)/mine.tsx          "Pengajuan": sakelar WO / Form Request (scope=mine)
+  (tabs)/activities.tsx    "Aktivitas": laporan kegiatan harian (scope mine/team/all, bulan, minggu)
   (tabs)/approvals.tsx     "Persetujuan": /approvals/pending
   (tabs)/account.tsx       profil, status push, daftar notifikasi, keluar
   work-orders/new.tsx      form buat WO + unggah foto
@@ -260,19 +305,26 @@ app/
   requests/[id]/index.tsx  detail Form Request + PENGESAHAN + action bar berbasis `permissions`
   pm-tasks/[id]/index.tsx  detail tugas PM + pengisian checklist (simpan otomatis)
   equipment/[id]/history.tsx  riwayat maintenance per alat (PM + WO)
+  activities/new.tsx       form tambah (POST) / ubah (?id= → PUT) aktivitas harian
+  activities/[id].tsx      detail aktivitas + Update Status / Ubah / Hapus berbasis `permissions`
+  programs/index.tsx       daftar program kerja per tahun
+  programs/[id].tsx        detail program: sub-item, kegiatan, lembar update progress / status (PIC)
 src/
   auth/AuthContext.tsx     sesi, login/TOTP/logout
   lib/api.ts               klien HTTP (ApiError, 401 handler) · endpoints.ts (semua endpoint bertipe)
   lib/push.ts              channel, izin, token, (un)subscribe · download.ts (PDF/lampiran → share)
   lib/photos.ts            kamera/galeri/PDF & unggah lampiran · format.ts (tanggal WIB, durasi, Rupiah)
-  lib/documents.ts         routing notifikasi/approval → WO, Form Request atau tugas PM
+  lib/documents.ts         routing notifikasi/approval → WO, Form Request, tugas PM atau program kerja
   lib/pm.ts                aturan checklist (penilaian angka, kelengkapan, payload simpan), petunjuk jatuh tempo
   hooks/useChecklistAutosave.ts   draf butir + simpan otomatis ter-debounce · usePmTask.ts
+  hooks/useDailyActivity.ts   detail aktivitas, meta scope/izin, sinkronisasi cache · useWorkProgram.ts
   components/              UI (tombol besar, chip, modal), PagedList, ActionBar, Timeline, MaterialsEditor,
-                           StaffRadioList, kartu & daftar
+                           StaffRadioList, DateTimeField (mode datetime / date), kartu & daftar
   components/request/      RequestForm, ApprovalSteps (PENGESAHAN), SuperiorModal, RulesBlock
   components/workorder/    modal aksi WO, lampiran (AttachmentGrid dengan header Authorization)
   components/pm/           PmTaskCard/List, ChecklistItemCard, ChecklistReadOnly, FindingWorkOrderModal, TaskModals
+  components/activity/     ActivityCard, ActivitySummary, MonthNavigator, ActivityStatusModal
+  components/program/      ProgramCard (+CountChips), ProgramActivityRow (+PicChips), ProgramActivitySheet, ProgressBar
 ```
 
 Tombol aksi di detail WO hanya muncul sesuai `permissions` dari server (`can_pick`, `can_receive`, `can_reassign`,

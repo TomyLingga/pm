@@ -6,6 +6,9 @@ return [
     // Technicians are the grade below them (BOM-4).
     'lead_grade_codes' => array_filter(explode(',', env('PM_LEAD_GRADE_CODES', 'BOM,BOM-1,BOM-2,BOM-3'))),
 
+    // NRKs that receive the admin role automatically when they log in (first admin of a fresh install).
+    'bootstrap_admin_nrks' => array_values(array_filter(array_map('trim', explode(',', (string) env('PM_BOOTSTRAP_ADMIN_NRKS', ''))))),
+
     // ISO-8601 day numbers (1 = Monday … 7 = Sunday) counted as working days.
     'working_days' => array_map('intval', explode(',', env('PM_WORKING_DAYS', '1,2,3,4,5'))),
 

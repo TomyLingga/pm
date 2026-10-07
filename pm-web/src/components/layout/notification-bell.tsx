@@ -33,6 +33,7 @@ function notificationHref(notification: AppNotification): string | null {
     documentHref(notification.document_type, notification.document_id) ??
     documentHref("service_request", notification.service_request_id) ??
     documentHref("pm_task", notification.pm_task_id) ??
+    documentHref("work_program", notification.work_program_id) ??
     documentHref("work_order", notification.work_order_id)
   );
 }

@@ -3,8 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Cog, MapPin, Plus, RotateCcw, Wrench } from "lucide-react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Cog, MapPin, Plus, RotateCcw, Upload, Wrench } from "lucide-react";
+import { ImportDialog } from "@/components/common/import-dialog";
 import { PageHeader } from "@/components/common/page-header";
 import { Pagination } from "@/components/common/pagination";
 import { SearchBox } from "@/components/common/search-box";
@@ -21,7 +22,7 @@ import { useUrlListState } from "@/hooks/use-url-list-state";
 import { errorMessage } from "@/lib/api";
 import { canManagePm } from "@/lib/auth";
 import { EQUIPMENT_STATUS_OPTIONS } from "@/lib/pm-constants";
-import { listEquipment } from "@/lib/pm-equipment";
+import { equipmentImportTemplateUrl, listEquipment } from "@/lib/pm-equipment";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { EquipmentListParams } from "@/types/pm";
@@ -29,6 +30,14 @@ import { EquipmentFormDialog } from "./equipment-form-dialog";
 
 const FILTER_KEYS = ["executor_unit_id", "status", "q"] as const;
 const SCOPES = ["list"] as const;
+
+/** Shown above the file input of the import dialog. */
+const IMPORT_HINTS = [
+  "Kolom wajib: No. Alat dan Nama Alat.",
+  "No. Alat yang sudah ada akan diperbarui, yang baru ditambahkan.",
+  "Kode Lokasi dan Kode Unit Pelaksana ada di sheet Lokasi dan Unit Pelaksana pada template.",
+  "Hanya untuk unit pelaksana yang Anda pimpin.",
+];
 
 /** Placeholder shaped like the table (desktop) and the cards (phones). */
 function ListSkeleton() {
@@ -74,9 +83,11 @@ function ListSkeleton() {
 export function EquipmentListView() {
   const me = useCurrentUser();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { units } = usePmUnits();
   const { filters, page, activeFilterCount, setFilters, setPage, resetFilters } = useUrlListState(FILTER_KEYS, SCOPES);
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
 
   const params: EquipmentListParams = React.useMemo(
     () => ({
@@ -107,10 +118,22 @@ export function EquipmentListView() {
         description="Master alat/aset beserta riwayat maintenance (PM dan Work Order)."
         actions={
           canCreate ? (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus />
-              Tambah Equipment
-            </Button>
+            <>
+              {/* Icon-only on phones, label from sm: up; aria-label keeps the name. */}
+              <Button
+                variant="outline"
+                className="px-3 sm:px-4"
+                onClick={() => setImportOpen(true)}
+                aria-label="Import Excel"
+              >
+                <Upload />
+                <span className="hidden sm:inline">Import Excel</span>
+              </Button>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus />
+                Tambah Equipment
+              </Button>
+            </>
           ) : undefined
         }
       />
@@ -159,17 +182,29 @@ export function EquipmentListView() {
         <EmptyState
           icon={<Cog className="h-5 w-5" aria-hidden />}
           title={hasFilters ? "Tidak ada equipment yang cocok" : "Belum ada equipment"}
-          description={hasFilters ? "Coba ubah atau reset filter." : "Tambahkan equipment agar bisa dijadwalkan PM."}
+          description={
+            hasFilters
+              ? "Coba ubah atau reset filter."
+              : canCreate
+                ? "Tambahkan equipment satu per satu atau import dari Excel."
+                : "Tambahkan equipment agar bisa dijadwalkan PM."
+          }
           action={
             hasFilters ? (
               <Button variant="outline" onClick={resetFilters}>
                 Reset filter
               </Button>
             ) : canCreate ? (
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus />
-                Tambah Equipment
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus />
+                  Tambah Equipment
+                </Button>
+                <Button variant="outline" onClick={() => setImportOpen(true)}>
+                  <Upload />
+                  Import Excel
+                </Button>
+              </div>
             ) : null
           }
         />
@@ -256,6 +291,20 @@ export function EquipmentListView() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSaved={(equipment) => router.push(`/equipment/${equipment.id}`)}
+      />
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Import Equipment"
+        description="Tambah atau perbarui banyak equipment sekaligus dari file Excel."
+        templateUrl={equipmentImportTemplateUrl()}
+        uploadPath="/equipment/import"
+        hints={IMPORT_HINTS}
+        onImported={() => {
+          // Import can create and update rows, so refresh every equipment query (list, detail, lookups).
+          void queryClient.invalidateQueries({ queryKey: queryKeys.equipmentAll });
+        }}
+        idPrefix="equipment-import"
       />
     </div>
   );

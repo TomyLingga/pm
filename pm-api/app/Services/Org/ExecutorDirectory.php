@@ -53,6 +53,22 @@ class ExecutorDirectory
         return in_array($user->grade_code, config('pm.lead_grade_codes'), true);
     }
 
+    /**
+     * Delegation only goes downwards: a lead may assign work to staff whose Portal grade is below their own
+     * (BOM-3 → BOM-4, BOM-2 → BOM-3/BOM-4), or to themselves. Admins may assign to anyone.
+     */
+    public function canDelegateTo(User $from, User $to): bool
+    {
+        if ($from->isAdmin() || (int) $from->id === (int) $to->id) {
+            return true;
+        }
+        if ($from->grade_level === null) {
+            return false;
+        }
+
+        return (int) ($to->grade_level ?? 0) < (int) $from->grade_level;
+    }
+
     /** Lead of at least one executor unit (or admin). */
     public function isLeadAnywhere(User $user): bool
     {

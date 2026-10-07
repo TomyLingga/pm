@@ -9,6 +9,7 @@ export interface AppNotification {
   work_order_id: number | null;
   service_request_id?: number | null;
   pm_task_id?: number | null;
+  work_program_id?: number | null;
   alarm: boolean;
   read_at: string | null;
   created_at: string;

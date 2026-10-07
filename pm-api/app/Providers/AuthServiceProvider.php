@@ -19,6 +19,9 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\PmSchedule::class => \App\Policies\PmPolicy::class,
         \App\Models\PmTask::class => \App\Policies\PmPolicy::class,
         \App\Models\Equipment::class => \App\Policies\PmPolicy::class,
+        \App\Models\WorkProgram::class => \App\Policies\WorkProgramPolicy::class,
+        \App\Models\WorkProgramActivity::class => \App\Policies\WorkProgramPolicy::class,
+        \App\Models\DailyActivity::class => \App\Policies\DailyActivityPolicy::class,
     ];
 
     /**

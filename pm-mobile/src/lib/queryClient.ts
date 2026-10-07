@@ -47,4 +47,15 @@ export const queryKeys = {
   pmSummary: ['pm-summary'] as const,
   equipmentDetail: (id: number) => ['equipment-detail', id] as const,
   equipmentHistory: (id: number) => ['equipment-history', id] as const,
+  // Aktivitas harian & program kerja
+  activities: ['daily-activities'] as const,
+  activityList: (scope: string, year: number, month: number, week: number | null) =>
+    ['daily-activities', scope, year, month, week] as const,
+  activity: (id: number) => ['daily-activity', id] as const,
+  activityMeta: ['daily-activities', 'meta'] as const,
+  activityPeople: ['daily-activity-people'] as const,
+  programs: ['work-programs'] as const,
+  programList: (year: number | null) => ['work-programs', year ?? 'default'] as const,
+  program: (id: number) => ['work-program', id] as const,
+  programActivity: (id: number) => ['work-program-activity', id] as const,
 };

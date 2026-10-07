@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\PmTaskStatus;
 use App\Enums\WorkOrderStatus;
 use App\Exceptions\InvalidTransitionException;
+use App\Exports\Templates\EquipmentTemplate;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEquipmentRequest;
 use App\Http\Resources\EquipmentResource;
 use App\Models\Equipment;
+use App\Services\Org\ExecutorDirectory;
 use App\Services\Pm\EquipmentHistory;
+use App\Services\Pm\EquipmentImporter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +22,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /** Equipment master (minimal CRUD) and the maintenance history per equipment. */
 class EquipmentController extends Controller
@@ -93,6 +98,22 @@ class EquipmentController extends Controller
         $equipment->delete();
 
         return response()->noContent();
+    }
+
+    /** Excel template for bulk entry (leads only): sheet "Data" to fill, Contoh, Petunjuk, Lokasi, Unit Pelaksana. */
+    public function importTemplate(Request $request, ExecutorDirectory $directory): BinaryFileResponse
+    {
+        abort_unless($directory->isLeadAnywhere($request->user()), 403, 'Hanya pimpinan unit pelaksana yang dapat mengimpor equipment.');
+
+        return Excel::download(new EquipmentTemplate(), 'template-equipment.xlsx');
+    }
+
+    /** Upload a filled template; rows are matched on No. Alat (create or update), all-or-nothing. */
+    public function import(Request $request, EquipmentImporter $importer): JsonResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120']]);
+
+        return response()->json(['data' => $importer->import($request->user(), $request->file('file')->getRealPath())]);
     }
 
     public function history(Equipment $equipment, EquipmentHistory $history): AnonymousResourceCollection

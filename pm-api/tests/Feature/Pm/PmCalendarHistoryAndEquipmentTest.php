@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pm;
 
+use App\Exports\Templates\EquipmentTemplate;
 use App\Models\Equipment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -9,12 +10,14 @@ use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Tests\Concerns\BuildsSpreadsheets;
 use Tests\Concerns\PmFixtures;
 use Tests\TestCase;
 
 /** Calendar feed, task list / summary / export, maintenance history per equipment, equipment master. */
 class PmCalendarHistoryAndEquipmentTest extends TestCase
 {
+    use BuildsSpreadsheets;
     use PmFixtures;
     use RefreshDatabase;
 
@@ -204,6 +207,49 @@ class PmCalendarHistoryAndEquipmentTest extends TestCase
         $this->actingAsUser($this->itLead)->postJson('/api/v1/locations', ['code' => 'SRV-ROOM', 'name' => 'Lagi'])
             ->assertStatus(422)->assertJsonValidationErrors('code');
         $this->assertSame(3, Equipment::withTrashed()->count(), 'SCN-01, UPS-02 (soft-deleted) and SRV-09');
+    }
+
+    public function test_equipment_import_from_the_excel_template(): void
+    {
+        $this->actingAsUser($this->tech1)->get('/api/v1/equipment/import-template')->assertForbidden();
+        $this->actingAsUser($this->itLead)->get('/api/v1/equipment/import-template')->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $file = $this->xlsx([
+            EquipmentTemplate::HEADINGS,
+            ['PRN-001', 'Printer HP LaserJet', $this->location->code, $this->it->code, 'HP', 'M404', 'SN-1', 'Aktif'],
+            ['SCN-01', 'Scanner Brother (diperbarui)', null, strtolower($this->it->code), null, null, null, 'dalam perbaikan'],
+            ['ac-07', 'AC Ruang Server', null, null, 'Daikin', null, null, null],
+        ]);
+        $this->actingAsUser($this->tech1)->post('/api/v1/equipment/import', ['file' => $file])->assertForbidden();
+        $this->actingAsUser($this->itLead)->post('/api/v1/equipment/import', ['file' => $file])
+            ->assertOk()->assertJsonPath('data.created', 2)->assertJsonPath('data.updated', 1);
+
+        $printer = Equipment::query()->where('code', 'PRN-001')->sole();
+        $this->assertSame([$this->location->id, $this->it->id, 'HP', 'active'], [$printer->location_id, $printer->executor_unit_id, $printer->brand, $printer->status]);
+        $this->assertSame(['Scanner Brother (diperbarui)', 'under_repair'], [$this->equipment->fresh()->name, $this->equipment->fresh()->status]);
+        $ac = Equipment::query()->where('code', 'ac-07')->sole();
+        $this->assertSame(['active', null], [$ac->status, $ac->executor_unit_id]);
+
+        // Any bad row blocks the whole file, with messages per spreadsheet row
+        $bad = $this->xlsx([
+            EquipmentTemplate::HEADINGS,
+            ['', 'Tanpa kode', 'NOPE', 'ZZZ', null, null, null, 'Rusak'],
+            ['PRN-002', 'Printer MTC', null, $this->mtc->code, null, null, null, null],
+            ['PRN-003', 'Printer A', null, null, null, null, null, null],
+            ['prn-003', 'Printer A lagi', null, null, null, null, null, null],
+        ]);
+        $errors = $this->actingAsUser($this->itLead)->post('/api/v1/equipment/import', ['file' => $bad])->assertStatus(422)->json('errors');
+        $this->assertSame(['file', 'rows.2', 'rows.3', 'rows.5'], array_keys($errors));
+        $this->assertSame([
+            'No. Alat wajib diisi.',
+            'Kode Lokasi NOPE tidak ditemukan (lihat sheet "Lokasi").',
+            'Kode Unit Pelaksana ZZZ tidak ditemukan (lihat sheet "Unit Pelaksana").',
+            'Status harus salah satu dari: Aktif, Dalam Perbaikan, Tidak Aktif, Dihapuskan.',
+        ], $errors['rows.2']);
+        $this->assertSame(['Anda bukan pimpinan unit pelaksana MTC.'], $errors['rows.3']);
+        $this->assertSame(['No. Alat prn-003 ditulis lebih dari sekali (baris 4).'], $errors['rows.5']);
+        $this->assertNull(Equipment::query()->where('code', 'PRN-003')->first());
     }
 
     public function test_pm_notifications_carry_the_task_reference(): void

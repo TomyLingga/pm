@@ -70,7 +70,7 @@ function ReassignForm({ task, onDone }: { task: PmTaskDetail; onDone: () => void
         >
           <option value="">{staff.isPending ? "Memuat staf…" : "Pilih PIC"}</option>
           {currentMissing && task.pic ? <option value={String(task.pic.id)}>{task.pic.name}</option> : null}
-          {staff.data?.map((person) => (
+          {staff.data?.filter((person) => person.assignable).map((person) => (
             <option key={person.id} value={String(person.id)}>
               {person.name}
               {person.grade_code ? ` (${person.grade_code})` : ""}

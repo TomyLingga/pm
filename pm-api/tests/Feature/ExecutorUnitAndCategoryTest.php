@@ -63,6 +63,18 @@ class ExecutorUnitAndCategoryTest extends TestCase
         $this->action($this->kasubagIt, $wo['id'], 'receive', ['assignee_ids' => [$this->tech1->id], 'lead_id' => $this->tech1->id])
             ->assertOk()->assertJsonPath('data.status', 'received');
 
+        // Delegation only goes downwards: the seksi lead cannot assign a WO to the Kasubag/Kabag above.
+        $staffFor = fn (User $u) => collect($this->actingAsUser($u)->getJson("/api/v1/executor-units/{$this->it->id}/staff")->json('data'))->pluck('assignable', 'name');
+        $this->assertEquals(['Kabag Teknik' => false, 'Kasubag SIT' => false, 'Oka Aritonang' => true, 'Tomy Lingga' => true], $staffFor($this->itLead)->only(['Kasubag SIT', 'Kabag Teknik', 'Oka Aritonang', 'Tomy Lingga'])->sortKeys()->all());
+        $this->assertEquals(['Kabag Teknik' => false, 'Kasubag SIT' => true, 'Oka Aritonang' => true], $staffFor($this->kasubagIt)->only(['Kasubag SIT', 'Kabag Teknik', 'Oka Aritonang'])->sortKeys()->all());
+        $wo2 = $this->createWorkOrder();
+        $this->action($this->itLead, $wo2['id'], 'receive', ['assignee_ids' => [$this->kasubagIt->id], 'lead_id' => $this->kasubagIt->id])
+            ->assertStatus(422)->assertJsonValidationErrors('assignee_ids');
+        $this->action($this->kasubagIt, $wo2['id'], 'receive', ['assignee_ids' => [$this->itLead->id, $this->tech1->id], 'lead_id' => $this->itLead->id])
+            ->assertOk();
+        $this->action($this->itLead, $wo2['id'], 'assignees', ['assignee_ids' => [$this->kabagTek->id], 'lead_id' => $this->kabagTek->id], 'putJson')
+            ->assertStatus(422)->assertJsonValidationErrors('assignee_ids');
+
         // "Mgr/Spv Divisi" of a Form Request can be the Kabag above the seksi.
         $sr = $this->submittedRequest();
         $this->requestAction($this->superior, $sr['id'], 'approve')->assertOk();

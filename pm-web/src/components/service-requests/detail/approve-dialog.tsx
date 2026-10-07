@@ -71,7 +71,7 @@ function ApproveForm({ request, onDone }: { request: ServiceRequestDetail; onDon
             invalid={!!firstError(errors, "assigned_executor_id")}
           >
             <option value="">{staff.isPending ? "Memuat staf…" : "Tidak ditunjuk"}</option>
-            {staff.data?.map((person) => (
+            {staff.data?.filter((person) => person.assignable).map((person) => (
               <option key={person.id} value={String(person.id)}>
                 {person.name}
                 {person.grade_code ? ` (${person.grade_code})` : ""}

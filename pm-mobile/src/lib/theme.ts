@@ -1,4 +1,14 @@
-import type { ApprovalStepStatus, PmItemResult, PmTaskStatus, Priority, ServiceRequestStatus, WorkOrderStatus } from './types';
+import type {
+  ApprovalStepStatus,
+  DailyActivityStatus,
+  PmItemResult,
+  PmTaskStatus,
+  Priority,
+  ProgramActivityStatus,
+  ServiceRequestStatus,
+  WorkOrderStatus,
+  WorkProgramStatus,
+} from './types';
 
 export const colors = {
   primary: '#1E3A8A',
@@ -85,6 +95,20 @@ export const resultTones: Record<PmItemResult, Tone> = {
   na: { fg: '#475569', bg: '#F1F5F9', border: '#94A3B8' },
 };
 
+// Programme activity / daily activity: open=blue, on_progress=amber, closed=green, cancelled=gray
+export const activityStatusTones: Record<ProgramActivityStatus, Tone> = {
+  open: { fg: '#1D4ED8', bg: '#DBEAFE', border: '#60A5FA' },
+  on_progress: { fg: '#B45309', bg: '#FEF3C7', border: '#F59E0B' },
+  closed: { fg: '#15803D', bg: '#DCFCE7', border: '#4ADE80' },
+  cancelled: { fg: '#6B7280', bg: '#F3F4F6', border: '#D1D5DB' },
+};
+
+// Programme: active=green, closed=gray
+export const programStatusTones: Record<WorkProgramStatus, Tone> = {
+  active: { fg: '#15803D', bg: '#DCFCE7', border: '#4ADE80' },
+  closed: { fg: '#475569', bg: '#F1F5F9', border: '#94A3B8' },
+};
+
 // high=red, medium=amber, low=gray
 export const priorityTones: Record<Priority, Tone> = {
   high: { fg: '#B91C1C', bg: '#FEE2E2', border: '#F87171' },
@@ -114,6 +138,14 @@ export function priorityTone(priority: string): Tone {
   return (priorityTones as Record<string, Tone>)[priority] ?? fallbackTone;
 }
 
+export function activityStatusTone(status: string | null | undefined): Tone {
+  return (activityStatusTones as Record<string, Tone>)[status ?? ''] ?? fallbackTone;
+}
+
+export function programStatusTone(status: string | null | undefined): Tone {
+  return (programStatusTones as Record<string, Tone>)[status ?? ''] ?? fallbackTone;
+}
+
 // Labels used only for client-side controls (filters, pickers). Display of
 // existing records always uses the server-provided `*_label`.
 export const STATUS_LABELS: Record<WorkOrderStatus, string> = {
@@ -137,4 +169,19 @@ export const REQUEST_PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
   { value: 'high', label: 'Tinggi' },
   { value: 'medium', label: 'Sedang' },
   { value: 'low', label: 'Rendah' },
+];
+
+/** Daily activity statuses (API_PROGRAM_ACTIVITY.md §1); labels follow the server's `status_label`. */
+export const DAILY_ACTIVITY_STATUS_OPTIONS: { value: DailyActivityStatus; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'on_progress', label: 'On Progress' },
+  { value: 'closed', label: 'Closed' },
+];
+
+/** Programme activity statuses (API_PROGRAM_ACTIVITY.md §1). */
+export const PROGRAM_ACTIVITY_STATUS_OPTIONS: { value: ProgramActivityStatus; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'on_progress', label: 'On Progress' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'cancelled', label: 'Dibatalkan' },
 ];

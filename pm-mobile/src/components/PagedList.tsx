@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -17,7 +17,7 @@ import { useDebounced } from '@/hooks/useDebounced';
 import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus';
 import { errorMessage } from '@/lib/api';
 import { colors, radius } from '@/lib/theme';
-import type { Paginated, Priority } from '@/lib/types';
+import type { Paginated, PaginationMeta, Priority } from '@/lib/types';
 import { Chip, ChipBar, EmptyState, ErrorView, Fab, LoadingView } from './ui';
 
 export interface ListFilter {
@@ -28,10 +28,10 @@ export interface ListFilter {
   priority?: Priority;
 }
 
-interface PagedListProps<T extends { id: number }> {
+interface PagedListProps<T extends { id: number }, M extends PaginationMeta = PaginationMeta> {
   /** Base query key; filter + search are appended. */
   queryKey: readonly unknown[];
-  fetchPage: (args: { page: number; status?: string; priority?: Priority; q?: string }) => Promise<Paginated<T>>;
+  fetchPage: (args: { page: number; status?: string; priority?: Priority; q?: string }) => Promise<Paginated<T, M>>;
   renderItem: (item: T) => React.ReactElement;
   filters: ListFilter[];
   defaultFilterKey?: string;
@@ -49,10 +49,14 @@ interface PagedListProps<T extends { id: number }> {
   fab?: { label: string; onPress: () => void };
   /** Rendered above the search box (e.g. a segmented switch). */
   header?: React.ReactNode;
+  /** Rendered inside the list, above the first item (scrolls with the content). */
+  listHeader?: React.ReactNode;
+  /** Called with the first page's `meta` whenever it changes (summary counters, scopes, ...). */
+  onMeta?: (meta: M) => void;
 }
 
 /** Search box + filter chips + infinite FlatList with pull-to-refresh (Laravel pagination). */
-export function PagedList<T extends { id: number }>({
+export function PagedList<T extends { id: number }, M extends PaginationMeta = PaginationMeta>({
   queryKey,
   fetchPage,
   renderItem,
@@ -66,7 +70,9 @@ export function PagedList<T extends { id: number }>({
   totalLabel,
   fab,
   header,
-}: PagedListProps<T>) {
+  listHeader,
+  onMeta,
+}: PagedListProps<T, M>) {
   const [filterKey, setFilterKey] = useState(defaultFilterKey ?? filters[0]?.key ?? 'all');
   const [selectedKeys, setSelectedKeys] = useState<string[]>(defaultFilterKeys ?? []);
   const [search, setSearch] = useState('');
@@ -114,7 +120,12 @@ export function PagedList<T extends { id: number }>({
     return out;
   }, [query.data]);
 
-  const total = query.data?.pages[0]?.meta?.total;
+  const firstMeta = query.data?.pages[0]?.meta;
+  const total = firstMeta?.total;
+
+  useEffect(() => {
+    if (firstMeta && onMeta) onMeta(firstMeta);
+  }, [firstMeta, onMeta]);
 
   const { refetch } = query;
   useRefreshOnFocus(refetch);
@@ -191,10 +202,15 @@ export function PagedList<T extends { id: number }>({
           onEndReached={onEndReached}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={
-            typeof total === 'number' && items.length > 0 ? (
-              <Text style={styles.total}>
-                {total} {totalLabel}
-              </Text>
+            listHeader || (typeof total === 'number' && items.length > 0) ? (
+              <View>
+                {listHeader}
+                {typeof total === 'number' && items.length > 0 && (
+                  <Text style={styles.total}>
+                    {total} {totalLabel}
+                  </Text>
+                )}
+              </View>
             ) : null
           }
           ListEmptyComponent={<EmptyState title={emptyTitle} message={emptyMessage} />}

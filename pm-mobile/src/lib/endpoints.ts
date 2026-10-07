@@ -1,5 +1,5 @@
 // Typed wrappers for every endpoint used by the mobile app
-// (docs/API_WORK_ORDER.md, docs/API_SERVICE_REQUEST.md and docs/API_PM.md).
+// (docs/API_WORK_ORDER.md, docs/API_SERVICE_REQUEST.md, docs/API_PM.md and docs/API_PROGRAM_ACTIVITY.md).
 import { api } from './api';
 import type {
   AcceptBody,
@@ -8,6 +8,14 @@ import type {
   AttachmentCollection,
   CompleteBody,
   CreateWorkOrderBody,
+  DailyActivity,
+  DailyActivityBody,
+  DailyActivityDetail,
+  DailyActivityListMeta,
+  DailyActivityPerson,
+  DailyActivityScope,
+  DailyActivityStatus,
+  DailyActivityUpdateBody,
   DataEnvelope,
   EquipmentDetail,
   EquipmentItem,
@@ -31,6 +39,9 @@ import type {
   PmTaskListItem,
   PmTaskScope,
   Priority,
+  ProgramActivityDetail,
+  ProgramActivityProgressBody,
+  ProgramActivityStatusBody,
   RequestExecutorUnit,
   ServiceRequestBody,
   ServiceRequestDetail,
@@ -41,6 +52,8 @@ import type {
   WorkOrderDetail,
   WorkOrderListItem,
   WorkOrderScope,
+  WorkProgramDetail,
+  WorkProgramListResponse,
 } from './types';
 
 // ---- Auth ----
@@ -321,4 +334,92 @@ export const notificationApi = {
   unreadCount: () => api<DataEnvelope<{ count: number }>>('/notifications/unread-count').then((r) => r.data.count),
   markRead: (id: number | string) => api<void>(`/notifications/${id}/read`, { method: 'POST' }),
   markAllRead: () => api<void>('/notifications/read-all', { method: 'POST' }),
+};
+
+// ---- Aktivitas Harian (API_PROGRAM_ACTIVITY.md §3) ----
+
+export interface DailyActivityListParams {
+  scope: DailyActivityScope;
+  year?: number;
+  month?: number;
+  week?: number;
+  from?: string;
+  to?: string;
+  /** Comma separated statuses. */
+  status?: string;
+  user_id?: number;
+  work_program_activity_id?: number;
+  q?: string;
+  page?: number;
+  per_page?: number;
+}
+
+const activityDetail = (path: string, method: 'POST' | 'PUT', body: unknown = {}) =>
+  api<DataEnvelope<DailyActivityDetail>>(path, { method, body }).then((r) => r.data);
+
+export const activityApi = {
+  list: (params: DailyActivityListParams) =>
+    api<Paginated<DailyActivity, DailyActivityListMeta>>('/daily-activities', {
+      query: {
+        scope: params.scope,
+        year: params.year,
+        month: params.month,
+        week: params.week,
+        from: params.from,
+        to: params.to,
+        status: params.status,
+        user_id: params.user_id,
+        work_program_activity_id: params.work_program_activity_id,
+        q: params.q,
+        page: params.page ?? 1,
+        per_page: params.per_page ?? 20,
+      },
+    }),
+
+  /** People whose reports I may see / fill in (leaders: subtree; admin: everyone; staff: myself). */
+  people: (q: string) =>
+    api<DataEnvelope<DailyActivityPerson[]>>('/daily-activities/people', { query: { q } }).then((r) => r.data ?? []),
+
+  get: (id: number) => api<DataEnvelope<DailyActivityDetail>>(`/daily-activities/${id}`).then((r) => r.data),
+
+  create: (body: DailyActivityBody) => activityDetail('/daily-activities', 'POST', body),
+  update: (id: number, body: DailyActivityUpdateBody) => activityDetail(`/daily-activities/${id}`, 'PUT', body),
+  changeStatus: (id: number, status: DailyActivityStatus, notes?: string) =>
+    activityDetail(`/daily-activities/${id}/status`, 'POST', { status, notes: notes || undefined }),
+  remove: (id: number) => api<void>(`/daily-activities/${id}`, { method: 'DELETE' }),
+};
+
+// ---- Program Kerja Tahunan (API_PROGRAM_ACTIVITY.md §2; read + own progress on mobile) ----
+
+export interface WorkProgramListParams {
+  year?: number;
+  org_unit_id?: number;
+  status?: string;
+  q?: string;
+}
+
+const programActivityDetail = (path: string, method: 'POST' | 'PUT', body: unknown = {}) =>
+  api<DataEnvelope<ProgramActivityDetail>>(path, { method, body }).then((r) => r.data);
+
+export const programApi = {
+  list: (params: WorkProgramListParams = {}) =>
+    api<WorkProgramListResponse>('/work-programs', {
+      query: { year: params.year, org_unit_id: params.org_unit_id, status: params.status, q: params.q },
+    }),
+
+  get: (id: number) => api<DataEnvelope<WorkProgramDetail>>(`/work-programs/${id}`).then((r) => r.data),
+
+  getActivity: (activityId: number) =>
+    api<DataEnvelope<ProgramActivityDetail>>(`/work-program-activities/${activityId}`).then((r) => r.data),
+
+  /** PIC: only `remarks` and `progress_pct` are accepted. */
+  updateActivity: (activityId: number, body: ProgramActivityProgressBody) =>
+    programActivityDetail(`/work-program-activities/${activityId}`, 'PUT', body),
+
+  changeActivityStatus: (activityId: number, body: ProgramActivityStatusBody) =>
+    programActivityDetail(`/work-program-activities/${activityId}/status`, 'POST', {
+      status: body.status,
+      notes: body.notes || undefined,
+      closed_date: body.closed_date || undefined,
+    }),
 };

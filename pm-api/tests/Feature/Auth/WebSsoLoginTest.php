@@ -67,6 +67,23 @@ class WebSsoLoginTest extends TestCase
         $this->assertSame('Muhammad Adib Nugraha', User::query()->first()->name);
     }
 
+    public function test_bootstrap_admin_nrk_gets_the_admin_role_on_first_login(): void
+    {
+        config(['pm.bootstrap_admin_nrks' => ['119090170']]);
+        Http::fake(['portal.test/api/sso/verify' => $this->portalOk($this->portalProfile())]);
+
+        $this->postJson('/api/v1/auth/sso', ['token' => 't'], $this->spaHeaders)->assertOk()->assertJsonPath('data.is_admin', true);
+        $this->assertTrue(User::query()->where('nrk', '119090170')->firstOrFail()->isAdmin());
+
+        // Revoking later via the command sticks even though the NRK is still listed? No: the list only grants, so clear it first.
+        config(['pm.bootstrap_admin_nrks' => []]);
+        $this->artisan('pm:make-admin', ['nrk' => '119090170', '--revoke' => true])->assertExitCode(0);
+        $this->assertFalse(User::query()->where('nrk', '119090170')->firstOrFail()->fresh()->isAdmin());
+        $this->artisan('pm:make-admin', ['nrk' => '119090170'])->assertExitCode(0);
+        $this->assertTrue(User::query()->where('nrk', '119090170')->firstOrFail()->fresh()->isAdmin());
+        $this->artisan('pm:make-admin', ['nrk' => '000'])->assertExitCode(1);
+    }
+
     public function test_invalid_or_expired_token_is_rejected(): void
     {
         Http::fake(['portal.test/api/sso/verify' => $this->portalError('Token sudah expired', 400)]);

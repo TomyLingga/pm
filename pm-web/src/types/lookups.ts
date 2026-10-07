@@ -36,6 +36,8 @@ export interface SuperiorCandidate extends UserBrief {
 export interface ExecutorStaff extends UserBrief {
   grade_code: string | null;
   is_lead: boolean;
+  /** I may assign work to this person (grade below mine, or myself). */
+  assignable: boolean;
 }
 
 export interface LocationOption {

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthContext';
@@ -17,6 +18,23 @@ const icon =
   ({ color, focused, size }: { color: string; focused: boolean; size: number }) => (
     <Ionicons name={focused ? active : inactive} size={size + 2} color={color} />
   );
+
+/** Header button of the "Aktivitas" tab that opens the annual work programmes. */
+function ProgramsHeaderButton() {
+  const router = useRouter();
+  return (
+    <Pressable
+      onPress={() => router.push('/programs')}
+      style={({ pressed }) => [styles.headerBtn, pressed && { opacity: 0.7 }]}
+      accessibilityRole="button"
+      accessibilityLabel="Program Kerja Tahunan"
+      hitSlop={6}
+    >
+      <Ionicons name="list-circle-outline" size={24} color={colors.white} />
+      <Text style={styles.headerBtnText}>Program Kerja</Text>
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
   const { status, isExecutor } = useAuth();
@@ -85,6 +103,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="activities"
+        options={{
+          title: 'Aktivitas',
+          headerTitle: 'Aktivitas Harian',
+          tabBarIcon: icon('calendar-number', 'calendar-number-outline'),
+          headerRight: () => <ProgramsHeaderButton />,
+        }}
+      />
+      <Tabs.Screen
         name="approvals"
         options={{
           title: 'Persetujuan',
@@ -104,3 +131,15 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  headerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    marginRight: 4,
+  },
+  headerBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+});

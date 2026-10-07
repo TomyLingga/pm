@@ -3,7 +3,8 @@
 API REST (JSON, prefix `/api/v1`) untuk Work Order, Form Request, dan Preventive Maintenance.
 Kontrak API: [`../docs/API_WORK_ORDER.md`](../docs/API_WORK_ORDER.md) (Modul A),
 [`../docs/API_SERVICE_REQUEST.md`](../docs/API_SERVICE_REQUEST.md) (Modul B), [`../docs/API_PM.md`](../docs/API_PM.md) (Modul C)
-dan [`../docs/API_DASHBOARD.md`](../docs/API_DASHBOARD.md) (dashboard, preferensi notifikasi).
+[`../docs/API_DASHBOARD.md`](../docs/API_DASHBOARD.md) (dashboard, preferensi notifikasi, papan monitor)
+dan [`../docs/API_PROGRAM_ACTIVITY.md`](../docs/API_PROGRAM_ACTIVITY.md) (Program Kerja Tahunan, Aktivitas Harian).
 Integrasi SSO: [`../docs/SSO.md`](../docs/SSO.md).
 
 ## Stack
@@ -25,12 +26,14 @@ php artisan serve             # http://127.0.0.1:8000
 Data organisasi & karyawan berasal dari Portal INTES:
 
 ```bash
+php artisan db:seed                                       # role admin + admin pertama (AdminSeeder: Tomy); satu-satunya seeder bawaan
 php artisan portal:sync                                   # unit organisasi + karyawan (juga terjadwal 02:00)
 php artisan pm:executor-unit SEK-IT --code=IT \
     --category=Software --category=Hardware --category=Network \
     --rules="1. Bahwa dengan pengesahan diatas, ...|2. Password akan ..." \
     --footer="Untuk informasi, silakan menghubungi IT HP : 081260666418 Ext. 144"
 # seksi pelaksana + kategori + "Petunjuk dan Aturan" Form Request (baris dipisah |; bisa diubah pimpinan lewat API)
+php artisan db:seed --class=OfficeSeeder                  # opsional: office Form Request (Head Office, Pabrik)
 php artisan db:seed --class=DemoSeeder                    # data demo semua kasus & status (dev/staging)
 ```
 
@@ -72,6 +75,21 @@ php artisan queue:work        # bila QUEUE_CONNECTION=database/redis (disarankan
 - **Peran pelaksana** diturunkan otomatis. Unit pelaksana = seksi. Staf = user di seksi itu (atau turunannya)
   + user bergrade pimpinan di sub bagian dan bagian di atas seksi (Kasubag/Kabag) + anggota tambahan
   (`executor_unit_members`); pimpinan = staf bergrade `PM_LEAD_GRADE_CODES` (default BOM, BOM-1, BOM-2, BOM-3), teknisi = BOM-4.
+- **Admin pertama**: `php artisan db:seed` (`AdminSeeder`) membuat baris pengguna Tomy (NRK 121110304) ber-role admin; profil
+  lengkapnya terisi saat ia login lewat Portal (dicocokkan lewat NRK). Alternatif: `PM_BOOTSTRAP_ADMIN_NRKS` di `.env`
+  (role diberikan saat login) atau `php artisan pm:make-admin <NRK> [--revoke]`; selanjutnya lewat menu Hak Akses.
+- **Delegasi ke bawah**: penugasan (teknisi WO, PIC PM, pelaksana Form Request) hanya ke grade di bawah penugas atau
+  diri sendiri (`ExecutorDirectory::canDelegateTo`); admin bebas.
+- **Program Kerja Tahunan** (`App\Services\Programs`): program milik satu unit organisasi; terlihat oleh seluruh cabang
+  unit (staf seksi melihat program sub bagian/bagian di atasnya, Kasubag/Kabag melihat semua di bawahnya), dikelola
+  pimpinan unit pemilik atau di atasnya, PIC mengubah progress/status kegiatannya. **Aktivitas Harian**
+  (`App\Services\Activities`): laporan per orang, pimpinan melihat subtree-nya, filter status (koma), minggu (M1-M5), dan
+  periode yang hanya menyaring laporan `closed` (laporan open/on progress selalu tampil). WO yang diselesaikan otomatis
+  menjadi laporan `closed` teknisinya (`DailyActivityService::createFromWorkOrder`, kolom `work_order_id`).
+  Keduanya mencatat `status_logs`. Data demo: `WorkProgramDemoSeeder` (dipanggil `DemoSeeder`).
+- **Import Excel** (equipment dan aktivitas harian): `GET …/import-template` memberi xlsx (sheet Data/Contoh/Petunjuk/
+  referensi), `POST …/import` menerima file; semua baris divalidasi dulu (`App\Support\SpreadsheetRows`), satu baris gagal →
+  `422 errors["rows.<n>"]` tanpa menyimpan apa pun (`EquipmentImporter`, `DailyActivityImporter`).
 - **List & export**: `from`/`to` hanya menyaring dokumen yang sudah berakhir (WO closed/batal/dialihkan, Request
   selesai/ditolak/batal/dialihkan, PM selesai/dilewati) menurut tanggal berakhirnya; dokumen berjalan selalu ikut
   (`App\Support\EndedPeriodFilter`).

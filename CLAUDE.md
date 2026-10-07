@@ -25,6 +25,10 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 - Backend = API-only (REST, JSON, prefix /api/v1). Semua logic bisnis di Service class, bukan di Controller.
 - Peran global hanya dua: `admin` (lihat & kelola semua unit, atur hak akses) dan user biasa (unitnya + dokumennya sendiri).
   Pimpinan/teknisi unit pelaksana diturunkan dari grade Portal, bukan role.
+- Delegasi hanya ke bawah: penugasan WO/PM/Request hanya ke grade di bawah penugas (atau diri sendiri); endpoint staf memberi flag `assignable`.
+- WO yang diselesaikan otomatis membuat Aktivitas Harian `closed` untuk teknisinya (`DailyActivityService::createFromWorkOrder`).
+- Import Excel (equipment, aktivitas harian): template dari `GET …/import-template`, unggah ke `POST …/import`; semua baris divalidasi dulu,
+  gagal satu → `422 errors["rows.<n>"]` dan tidak ada yang disimpan (`App\Support\SpreadsheetRows`, `App\Exports\Templates`).
 - Validasi pakai FormRequest Laravel. Otorisasi pakai Policy + role/permission (spatie/laravel-permission).
 - Semua perubahan status WO/Request/PM dicatat di tabel log (audit trail: siapa, kapan, status lama → baru, catatan).
 - Bahasa UI: Indonesia. Nama tabel/kolom/kode: Inggris snake_case.
@@ -35,7 +39,8 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 ## Struktur
 - `pm-api/` backend Laravel · `pm-web/` frontend Next.js · `pm-mobile/` aplikasi Android Expo · `docs/` desain
 - Kontrak API yang mengikat ketiganya (perbarui bila endpoint berubah): `docs/API_WORK_ORDER.md` (Modul A),
-  `docs/API_SERVICE_REQUEST.md` (Modul B), `docs/API_PM.md` (Modul C), `docs/API_DASHBOARD.md` (dashboard & preferensi notifikasi)
+  `docs/API_SERVICE_REQUEST.md` (Modul B), `docs/API_PM.md` (Modul C), `docs/API_DASHBOARD.md` (dashboard & preferensi notifikasi),
+  `docs/API_PROGRAM_ACTIVITY.md` (Program Kerja Tahunan & Aktivitas Harian)
 
 ## Perintah
 - Backend: `cd pm-api && php artisan serve`, test: `php artisan test` (DB PostgreSQL `pm_test`)

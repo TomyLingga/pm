@@ -398,7 +398,7 @@ export function ScheduleForm({ schedule }: { schedule?: PmScheduleDetail }) {
                 {!form.unitId ? "Pilih unit pelaksana dulu" : staff.isPending ? "Memuat staf…" : "Pilih PIC"}
               </option>
               {picMissing && schedule?.pic ? <option value={String(schedule.pic.id)}>{schedule.pic.name}</option> : null}
-              {staff.data?.map((person) => (
+              {staff.data?.filter((person) => person.assignable).map((person) => (
                 <option key={person.id} value={String(person.id)}>
                   {person.name}
                   {person.grade_code ? ` (${person.grade_code})` : ""}

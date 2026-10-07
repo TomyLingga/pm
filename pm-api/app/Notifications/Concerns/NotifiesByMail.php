@@ -5,6 +5,7 @@ namespace App\Notifications\Concerns;
 use App\Models\PmTask;
 use App\Models\ServiceRequest;
 use App\Models\WorkOrder;
+use App\Models\WorkProgram;
 use Illuminate\Notifications\Messages\MailMessage;
 
 /**
@@ -43,6 +44,7 @@ trait NotifiesByMail
             WorkOrder::MORPH_ALIAS => 'work-orders',
             ServiceRequest::MORPH_ALIAS => 'requests',
             PmTask::MORPH_ALIAS => 'pm/tasks',
+            WorkProgram::MORPH_ALIAS => 'programs',
             default => 'notifications',
         };
 

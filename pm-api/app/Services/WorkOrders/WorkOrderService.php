@@ -11,6 +11,7 @@ use App\Models\Material;
 use App\Models\OrgUnit;
 use App\Models\User;
 use App\Models\WorkOrder;
+use App\Services\Activities\DailyActivityService;
 use App\Services\Audit\StatusLogger;
 use App\Services\Documents\SignatureService;
 use App\Services\Org\ExecutorDirectory;
@@ -60,6 +61,7 @@ class WorkOrderService
         private SignatureService $signatures,
         private WorkingDayCalculator $calendar,
         private WorkOrderNotifier $notifier,
+        private DailyActivityService $activities,
     ) {
     }
 
@@ -302,6 +304,8 @@ class WorkOrderService
 
             $this->logger->log($workOrder, 'complete', $from, $workOrder->status, $technician);
             $this->sign($workOrder, self::SIGN_COMPLETED, $technician);
+            // The finished job is also the technicians' daily report for that day.
+            $this->activities->createFromWorkOrder($workOrder, $technician);
 
             return $workOrder;
         });
@@ -467,9 +471,13 @@ class WorkOrderService
         }
 
         $executor = ExecutorUnit::query()->findOrFail($workOrder->executor_unit_id);
-        $staffIds = $this->directory->staffQuery($executor)->whereIn('id', $userIds)->pluck('id')->map(fn ($id) => (int) $id)->all();
-        if (array_diff($userIds, $staffIds)) {
+        $staff = $this->directory->staffQuery($executor)->whereIn('id', $userIds)->get()->keyBy('id');
+        if (array_diff($userIds, $staff->keys()->map(fn ($id) => (int) $id)->all())) {
             throw ValidationException::withMessages(['assignee_ids' => ['Teknisi harus anggota unit pelaksana '.$executor->display_name.'.']]);
+        }
+        $above = $staff->reject(fn (User $u) => $this->directory->canDelegateTo($by, $u))->pluck('name');
+        if ($above->isNotEmpty()) {
+            throw ValidationException::withMessages(['assignee_ids' => ['Penugasan hanya ke grade di bawah Anda. Tidak dapat menugaskan: '.$above->implode(', ').'.']]);
         }
 
         $now = now();

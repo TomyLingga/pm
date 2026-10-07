@@ -29,7 +29,7 @@ class PmScheduleService
     public function create(User $by, array $data): PmSchedule
     {
         return DB::transaction(function () use ($by, $data) {
-            $schedule = new PmSchedule($this->attributes($data));
+            $schedule = new PmSchedule($this->attributes($data, $by));
             $schedule->created_by_id = $by->id;
             $schedule->save();
             $schedule->equipment()->sync($data['equipment_ids']);
@@ -42,14 +42,14 @@ class PmScheduleService
     }
 
     /** Tasks still TERJADWAL are dropped and generated again from the new definition. */
-    public function update(PmSchedule $schedule, array $data): PmSchedule
+    public function update(PmSchedule $schedule, array $data, ?User $by = null): PmSchedule
     {
         if ((int) $data['executor_unit_id'] !== (int) $schedule->executor_unit_id) {
             throw ValidationException::withMessages(['executor_unit_id' => ['Unit pelaksana jadwal tidak dapat diubah. Buat jadwal baru.']]);
         }
 
-        return DB::transaction(function () use ($schedule, $data) {
-            $schedule->fill($this->attributes($data))->save();
+        return DB::transaction(function () use ($schedule, $data, $by) {
+            $schedule->fill($this->attributes($data, $by))->save();
             $schedule->equipment()->sync($data['equipment_ids']);
 
             $schedule->is_active
@@ -68,7 +68,7 @@ class PmScheduleService
         });
     }
 
-    private function attributes(array $data): array
+    private function attributes(array $data, ?User $by = null): array
     {
         $unit = ExecutorUnit::query()->findOrFail($data['executor_unit_id']);
 
@@ -77,8 +77,12 @@ class PmScheduleService
         if (! $templateOk) {
             throw ValidationException::withMessages(['checklist_template_id' => ['Template checklist harus milik unit pelaksana yang sama.']]);
         }
-        if (! $this->directory->staffQuery($unit)->whereKey($data['pic_user_id'])->exists()) {
+        $pic = $this->directory->staffQuery($unit)->whereKey($data['pic_user_id'])->first();
+        if (! $pic) {
             throw ValidationException::withMessages(['pic_user_id' => ["PIC harus anggota unit pelaksana {$unit->display_name}."]]);
+        }
+        if ($by && ! $this->directory->canDelegateTo($by, $pic)) {
+            throw ValidationException::withMessages(['pic_user_id' => ['PIC hanya boleh grade di bawah Anda.']]);
         }
 
         $attributes = Arr::only($data, self::FIELDS);

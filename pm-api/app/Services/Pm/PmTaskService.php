@@ -185,6 +185,9 @@ class PmTaskService
             if (! $pic) {
                 throw ValidationException::withMessages(['pic_user_id' => ["PIC harus anggota unit pelaksana {$unit->display_name}."]]);
             }
+            if (! $this->directory->canDelegateTo($lead, $pic)) {
+                throw ValidationException::withMessages(['pic_user_id' => ['Penugasan hanya ke grade di bawah Anda.']]);
+            }
 
             $previous = $task->pic()->value('name');
             $task->pic_user_id = $pic->id;

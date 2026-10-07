@@ -24,6 +24,7 @@ use App\Services\ServiceRequests\ServiceRequestService;
 use App\Services\WorkOrders\WorkOrderService;
 use Carbon\CarbonImmutable;
 use Database\Seeders\Demo\DemoCast;
+use Database\Seeders\Demo\WorkProgramDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
@@ -113,6 +114,7 @@ class DemoSeeder extends Seeder
         }
 
         $this->report();
+        $this->call(WorkProgramDemoSeeder::class);
     }
 
     // ── Timeline ──────────────────────────────────────────────────────────────

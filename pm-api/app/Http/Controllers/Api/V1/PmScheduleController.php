@@ -60,7 +60,7 @@ class PmScheduleController extends Controller
     {
         $this->authorize('manage', $pmSchedule);
 
-        return $this->detail($this->service->update($pmSchedule, $request->validated()));
+        return $this->detail($this->service->update($pmSchedule, $request->validated(), $request->user()));
     }
 
     public function destroy(PmSchedule $pmSchedule): Response

@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\PmTask;
 use App\Models\ServiceRequest;
 use App\Models\WorkOrder;
+use App\Models\WorkProgram;
 use App\Notifications\Channels\ExpoPushChannel;
 use App\Notifications\Concerns\NotifiesByMail;
 use Illuminate\Bus\Queueable;
@@ -69,6 +70,7 @@ class DocumentNotification extends Notification implements ShouldQueue
             'work_order_id' => $this->documentType === WorkOrder::MORPH_ALIAS ? $this->documentId : null,
             'service_request_id' => $this->documentType === ServiceRequest::MORPH_ALIAS ? $this->documentId : null,
             'pm_task_id' => $this->documentType === PmTask::MORPH_ALIAS ? $this->documentId : null,
+            'work_program_id' => $this->documentType === WorkProgram::MORPH_ALIAS ? $this->documentId : null,
         ];
     }
 }

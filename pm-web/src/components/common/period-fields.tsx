@@ -9,28 +9,42 @@ interface PeriodFieldsProps {
   from: string;
   to: string;
   onChange: (patch: { from?: string; to?: string }) => void;
+  /** Field labels; the default pair describes the date a document ended. */
+  labels?: { from: string; to: string };
 }
 
 /** "Dari / Sampai tanggal" pair of the list period (see lib/list-period). */
-export function PeriodFields({ idPrefix, from, to, onChange }: PeriodFieldsProps) {
+export function PeriodFields({ idPrefix, from, to, onChange, labels }: PeriodFieldsProps) {
+  const fromLabel = labels?.from ?? "Berakhir dari";
+  const toLabel = labels?.to ?? "Berakhir sampai";
   return (
     <>
-      <Field label="Berakhir dari" htmlFor={`${idPrefix}-from`}>
+      <Field label={fromLabel} htmlFor={`${idPrefix}-from`}>
         <Input id={`${idPrefix}-from`} type="date" value={from} max={to || undefined} onChange={(e) => onChange({ from: e.target.value })} />
       </Field>
-      <Field label="Berakhir sampai" htmlFor={`${idPrefix}-to`}>
+      <Field label={toLabel} htmlFor={`${idPrefix}-to`}>
         <Input id={`${idPrefix}-to`} type="date" value={to} min={from || undefined} onChange={(e) => onChange({ to: e.target.value })} />
       </Field>
     </>
   );
 }
 
-/** One-line explanation under the filter panel. */
-export function PeriodHint({ finished, running, visible }: { finished: string; running: string; visible: boolean }) {
+/** One-line explanation under the filter panel. `by` names the date the range applies to. */
+export function PeriodHint({
+  finished,
+  running,
+  visible,
+  by = "menurut tanggal berakhirnya",
+}: {
+  finished: string;
+  running: string;
+  visible: boolean;
+  by?: string;
+}) {
   return (
     <p className="text-xs text-muted-foreground">
       {visible
-        ? `Rentang tanggal hanya menyaring ${finished} (menurut tanggal berakhirnya); ${running} selalu ditampilkan semua.`
+        ? `Rentang tanggal hanya menyaring ${finished} (${by}); ${running} selalu ditampilkan semua.`
         : `Status ini masih berjalan, jadi semua ${running} ditampilkan tanpa filter tanggal.`}
     </p>
   );
