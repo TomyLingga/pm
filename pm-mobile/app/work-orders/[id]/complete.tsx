@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthContext';
 import { DateTimeField } from '@/components/DateTimeField';
+import { MaterialsEditor, materialRowsFrom, validateMaterials, type MaterialRow } from '@/components/MaterialsEditor';
 import { SearchPickerModal } from '@/components/SearchPickerModal';
 import {
   Button,
@@ -23,7 +24,7 @@ import { applyWorkOrderResult, useWorkOrder } from '@/hooks/useWorkOrder';
 import { ApiError, errorMessage } from '@/lib/api';
 import { CLEARANCE_OPTIONS, clearanceItems } from '@/lib/clearance';
 import { lookupApi, workOrderApi } from '@/lib/endpoints';
-import { formatDuration, minutesBetween, parseDecimal, toApiDateTime } from '@/lib/format';
+import { formatDuration, minutesBetween, toApiDateTime } from '@/lib/format';
 import { queryKeys } from '@/lib/queryClient';
 import { colors, radius } from '@/lib/theme';
 import { toast } from '@/lib/toast';
@@ -31,18 +32,9 @@ import type {
   ClearanceResult,
   LabourInput,
   MaterialInput,
-  MaterialItem,
   StaffMember,
   WorkOrderDetail,
 } from '@/lib/types';
-
-interface MaterialRow {
-  key: string;
-  material_id: number | null;
-  material_name: string;
-  quantity: string;
-  unit: string;
-}
 
 interface LabourRow {
   key: string;
@@ -62,25 +54,6 @@ const parseDate = (iso: string | null | undefined): Date | null => {
 };
 
 type Errors = Record<string, string>;
-
-function isEmptyMaterial(r: MaterialRow) {
-  return !r.material_name.trim() && !r.quantity.trim() && !r.unit.trim();
-}
-
-function validateMaterials(rows: MaterialRow[], errors: Errors): MaterialInput[] {
-  const out: MaterialInput[] = [];
-  rows.forEach((r) => {
-    if (isEmptyMaterial(r)) return;
-    const qty = parseDecimal(r.quantity);
-    if (!r.material_name.trim()) errors[`m.${r.key}.name`] = 'Nama material wajib diisi.';
-    if (qty === null || qty <= 0) errors[`m.${r.key}.qty`] = 'Jumlah harus > 0.';
-    if (!r.unit.trim()) errors[`m.${r.key}.unit`] = 'Satuan wajib.';
-    if (r.material_name.trim() && qty !== null && qty > 0 && r.unit.trim()) {
-      out.push({ material_id: r.material_id, material_name: r.material_name.trim(), quantity: qty, unit: r.unit.trim() });
-    }
-  });
-  return out;
-}
 
 function validateLabours(rows: LabourRow[], errors: Errors): LabourInput[] {
   const out: LabourInput[] = [];
@@ -133,7 +106,6 @@ export default function CompleteWorkOrderScreen() {
   const [clearance, setClearance] = useState<Record<number, ClearanceResult | undefined>>({});
   const [remarks, setRemarks] = useState('');
   const [errors, setErrors] = useState<Errors>({});
-  const [materialPickerFor, setMaterialPickerFor] = useState<string | null>(null);
   const [workerPickerFor, setWorkerPickerFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -144,15 +116,7 @@ export default function CompleteWorkOrderScreen() {
     if (!wo || initialized) return;
     setWorkDone(wo.work_done ?? '');
     setRemarks(wo.remarks ?? '');
-    setMaterials(
-      (wo.materials ?? []).map((m) => ({
-        key: newKey(),
-        material_id: m.material_id,
-        material_name: m.material_name,
-        quantity: String(m.quantity ?? ''),
-        unit: m.unit ?? '',
-      })),
-    );
+    setMaterials(materialRowsFrom(wo.materials));
     const existing = (wo.labours ?? []).map<LabourRow>((l) => ({
       key: newKey(),
       user_id: l.user_id,
@@ -191,19 +155,11 @@ export default function CompleteWorkOrderScreen() {
 
   const touch = () => setDirty(true);
 
-  const updateMaterial = (key: string, patch: Partial<MaterialRow>) => {
-    touch();
-    setMaterials((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  };
   const updateLabour = (key: string, patch: Partial<LabourRow>) => {
     touch();
     setLabours((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   };
 
-  const addMaterial = () => {
-    touch();
-    setMaterials((rows) => [...rows, { key: newKey(), material_id: null, material_name: '', quantity: '', unit: '' }]);
-  };
   const addLabour = () => {
     touch();
     setLabours((rows) => {
@@ -349,54 +305,14 @@ export default function CompleteWorkOrderScreen() {
             <FieldLabel>Material</FieldLabel>
             <Text style={styles.muted}>{materials.length} baris</Text>
           </View>
-          {materials.map((m, i) => (
-            <View key={m.key} style={styles.rowCard}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.rowTitle}>Material {i + 1}</Text>
-                <Pressable
-                  onPress={() => {
-                    touch();
-                    setMaterials((rows) => rows.filter((r) => r.key !== m.key));
-                  }}
-                  hitSlop={10}
-                  style={styles.removeBtn}
-                  accessibilityLabel="Hapus material"
-                >
-                  <Ionicons name="trash-outline" size={22} color={colors.danger} />
-                </Pressable>
-              </View>
-              <SelectField
-                value={m.material_name || null}
-                subtitle={m.material_id ? 'Dari master material' : 'Isian bebas'}
-                placeholder="Cari material / isi bebas"
-                icon="cube-outline"
-                onPress={() => setMaterialPickerFor(m.key)}
-                error={errors[`m.${m.key}.name`]}
-              />
-              <View style={styles.inline}>
-                <View style={{ flex: 1 }}>
-                  <TextField
-                    label="Jumlah"
-                    value={m.quantity}
-                    onChangeText={(t) => updateMaterial(m.key, { quantity: t })}
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                    error={errors[`m.${m.key}.qty`]}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <TextField
-                    label="Satuan"
-                    value={m.unit}
-                    onChangeText={(t) => updateMaterial(m.key, { unit: t })}
-                    placeholder="pcs, m, liter"
-                    error={errors[`m.${m.key}.unit`]}
-                  />
-                </View>
-              </View>
-            </View>
-          ))}
-          <Button title="Tambah Material" icon="add" variant="secondary" onPress={addMaterial} />
+          <MaterialsEditor
+            rows={materials}
+            onChange={(rows) => {
+              touch();
+              setMaterials(rows);
+            }}
+            errors={errors}
+          />
         </Card>
 
         {/* Labours */}
@@ -512,28 +428,6 @@ export default function CompleteWorkOrderScreen() {
           />
         )}
       </View>
-
-      <SearchPickerModal<MaterialItem>
-        visible={!!materialPickerFor}
-        title="Pilih Material"
-        placeholder="Cari kode / nama material"
-        queryKey={['materials']}
-        fetcher={(q) => lookupApi.materials(q)}
-        keyExtractor={(m) => String(m.id)}
-        itemTitle={(m) => m.name}
-        itemSubtitle={(m) => [m.code, m.unit].filter(Boolean).join(' · ')}
-        onClose={() => setMaterialPickerFor(null)}
-        onSelect={(m) => {
-          if (materialPickerFor)
-            updateMaterial(materialPickerFor, { material_id: m.id, material_name: m.name, unit: m.unit ?? '' });
-          setMaterialPickerFor(null);
-        }}
-        onFreeText={(text) => {
-          if (materialPickerFor) updateMaterial(materialPickerFor, { material_id: null, material_name: text });
-          setMaterialPickerFor(null);
-        }}
-        freeTextLabel={(t) => `Gunakan material "${t}"`}
-      />
 
       <SearchPickerModal<StaffMember>
         visible={!!workerPickerFor}

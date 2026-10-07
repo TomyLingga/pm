@@ -9,15 +9,19 @@ import { RequestRules } from "../request-rules";
 /** KEPERLUAN (+ office and cost estimate). */
 export function PurposeSection({ request }: { request: ServiceRequestDetail }) {
   return (
-    <Section title="Keperluan" icon={<FileText className="h-4 w-4" aria-hidden />}>
+    <Section title="Keperluan" icon={<FileText aria-hidden />}>
       <div className="space-y-4">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{request.purpose}</p>
+        <p className="max-w-prose whitespace-pre-wrap break-words text-sm leading-relaxed">{request.purpose}</p>
         <InfoList
+          className="border-t pt-4"
           items={[
             { label: "Office", value: request.office?.name },
             {
               label: "Estimasi biaya",
-              value: request.estimated_cost !== null ? formatRupiah(request.estimated_cost) : null,
+              value:
+                request.estimated_cost !== null ? (
+                  <span className="tabular font-medium">{formatRupiah(request.estimated_cost)}</span>
+                ) : null,
             },
           ]}
         />
@@ -29,13 +33,13 @@ export function PurposeSection({ request }: { request: ServiceRequestDetail }) {
 /** JENIS PERMINTAAN + PRIORITAS + executor assignment. */
 export function RequestTypeSection({ request }: { request: ServiceRequestDetail }) {
   return (
-    <Section title="Jenis Permintaan" icon={<ClipboardList className="h-4 w-4" aria-hidden />}>
+    <Section title="Jenis Permintaan" icon={<ClipboardList aria-hidden />}>
       <InfoList
         items={[
           {
             label: "Jenis permintaan",
             value: request.service_category ? (
-              <span className="font-semibold uppercase">{request.service_category.name}</span>
+              <span className="font-semibold uppercase tracking-wide">{request.service_category.name}</span>
             ) : null,
           },
           { label: "Unit pelaksana", value: request.executor_unit.display_name },
@@ -60,9 +64,9 @@ export function RequestTypeSection({ request }: { request: ServiceRequestDetail 
 /** KETERANGAN (executor notes) */
 export function ExecutorNotesSection({ request }: { request: ServiceRequestDetail }) {
   return (
-    <Section title="Keterangan" icon={<MessageSquareText className="h-4 w-4" aria-hidden />}>
+    <Section title="Keterangan" icon={<MessageSquareText aria-hidden />}>
       {request.executor_notes ? (
-        <p className="whitespace-pre-wrap text-sm italic">{request.executor_notes}</p>
+        <p className="max-w-prose whitespace-pre-wrap break-words text-sm leading-relaxed">{request.executor_notes}</p>
       ) : (
         <p className="text-sm text-muted-foreground">Diisi pelaksana saat Form Request diselesaikan.</p>
       )}
@@ -73,7 +77,7 @@ export function ExecutorNotesSection({ request }: { request: ServiceRequestDetai
 /** PETUNJUK DAN ATURAN */
 export function RulesSection({ request }: { request: ServiceRequestDetail }) {
   return (
-    <Section title="Petunjuk dan Aturan" icon={<BookOpenText className="h-4 w-4" aria-hidden />}>
+    <Section title="Petunjuk dan Aturan" icon={<BookOpenText aria-hidden />}>
       <RequestRules rules={request.rules} contactFooter={request.contact_footer} />
     </Section>
   );
@@ -93,7 +97,7 @@ export function IdentitySection({ request }: { request: ServiceRequestDetail }) 
     phone: null,
   };
   return (
-    <Section title="Identitas Karyawan" icon={<IdCard className="h-4 w-4" aria-hidden />}>
+    <Section title="Identitas Karyawan" icon={<IdCard aria-hidden />}>
       <IdentityBlock identity={identity} />
     </Section>
   );

@@ -1,5 +1,5 @@
 // Typed wrappers for every endpoint used by the mobile app
-// (docs/API_WORK_ORDER.md and docs/API_SERVICE_REQUEST.md).
+// (docs/API_WORK_ORDER.md, docs/API_SERVICE_REQUEST.md and docs/API_PM.md).
 import { api } from './api';
 import type {
   AcceptBody,
@@ -9,8 +9,10 @@ import type {
   CompleteBody,
   CreateWorkOrderBody,
   DataEnvelope,
+  EquipmentDetail,
   EquipmentItem,
   ExecutorUnit,
+  HistoryEntry,
   LabourInput,
   LocationItem,
   LoginResponse,
@@ -21,6 +23,13 @@ import type {
   Office,
   Paginated,
   PendingApproval,
+  PmCompleteBody,
+  PmFindingWorkOrderBody,
+  PmItemPayload,
+  PmSummary,
+  PmTaskDetail,
+  PmTaskListItem,
+  PmTaskScope,
   Priority,
   RequestExecutorUnit,
   ServiceRequestBody,
@@ -97,13 +106,20 @@ export interface UploadFile {
   type: string;
 }
 
-/** Multipart upload of one file (`file` + `collection`) to an attachments endpoint. */
-export function uploadAttachment(path: string, file: UploadFile, collection: AttachmentCollection) {
+/** Multipart upload of one file (`file` + extra text fields) to an attachments endpoint. */
+export function uploadMultipart(path: string, file: UploadFile, fields: Record<string, string | number | null | undefined>) {
   const form = new FormData();
   // React Native's FormData accepts { uri, name, type } objects for file parts.
   form.append('file', file as unknown as Blob);
-  form.append('collection', collection);
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined && value !== null && value !== '') form.append(key, String(value));
+  }
   return api<DataEnvelope<Attachment> | undefined>(path, { method: 'POST', formData: form });
+}
+
+/** WO / Form Request attachment (`file` + `collection`). */
+export function uploadAttachment(path: string, file: UploadFile, collection: AttachmentCollection) {
+  return uploadMultipart(path, file, { collection });
 }
 
 export const attachmentApi = {
@@ -240,6 +256,61 @@ export const approvalApi = {
   pending: () => api<DataEnvelope<PendingApproval[]>>('/approvals/pending').then((r) => r.data ?? []),
   pendingCount: () =>
     api<DataEnvelope<{ count: number }>>('/approvals/pending-count').then((r) => r.data?.count ?? 0),
+};
+
+// ---- Preventive Maintenance tasks (API_PM.md §5) ----
+
+export interface PmTaskListParams {
+  scope: PmTaskScope;
+  status?: string;
+  q?: string;
+  sort?: 'due_at' | '-due_at';
+  page?: number;
+  per_page?: number;
+}
+
+const pmAction = (path: string, method: 'POST' | 'PUT', body: unknown = {}) =>
+  api<DataEnvelope<PmTaskDetail>>(path, { method, body }).then((r) => r.data);
+
+export const pmTaskApi = {
+  list: (params: PmTaskListParams) =>
+    api<Paginated<PmTaskListItem>>('/pm-tasks', {
+      query: {
+        scope: params.scope,
+        status: params.status,
+        q: params.q,
+        sort: params.sort ?? 'due_at',
+        page: params.page ?? 1,
+        per_page: params.per_page ?? 20,
+      },
+    }),
+
+  summary: () => api<DataEnvelope<PmSummary>>('/pm-tasks/summary').then((r) => r.data),
+
+  get: (id: number) => api<DataEnvelope<PmTaskDetail>>(`/pm-tasks/${id}`).then((r) => r.data),
+
+  start: (id: number) => pmAction(`/pm-tasks/${id}/start`, 'POST'),
+  saveItems: (id: number, items: PmItemPayload[]) => pmAction(`/pm-tasks/${id}/items`, 'PUT', { items }),
+  saveMaterials: (id: number, materials: MaterialInput[]) =>
+    pmAction(`/pm-tasks/${id}/materials`, 'PUT', { materials }),
+  complete: (id: number, body: PmCompleteBody) => pmAction(`/pm-tasks/${id}/complete`, 'POST', body),
+  proposeSkip: (id: number, reason: string) => pmAction(`/pm-tasks/${id}/propose-skip`, 'POST', { reason }),
+  skip: (id: number, reason: string) => pmAction(`/pm-tasks/${id}/skip`, 'POST', { reason }),
+  reassign: (id: number, picUserId: number) => pmAction(`/pm-tasks/${id}/reassign`, 'POST', { pic_user_id: picUserId }),
+  createWorkOrder: (id: number, itemId: number, body: PmFindingWorkOrderBody) =>
+    pmAction(`/pm-tasks/${id}/items/${itemId}/work-order`, 'POST', body),
+
+  /** General task photo, or a per-item photo when `itemId` is given. */
+  uploadAttachment: (id: number, file: UploadFile, itemId?: number | null) =>
+    uploadMultipart(`/pm-tasks/${id}/attachments`, file, { item_id: itemId ?? undefined }),
+};
+
+// ---- Equipment (detail + maintenance history; CRUD stays web-only) ----
+
+export const equipmentApi = {
+  get: (id: number) => api<DataEnvelope<EquipmentDetail>>(`/equipment/${id}`).then((r) => r.data),
+  history: (id: number, page: number) =>
+    api<Paginated<HistoryEntry>>(`/equipment/${id}/history`, { query: { page } }),
 };
 
 // ---- Notifications ----

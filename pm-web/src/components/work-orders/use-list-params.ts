@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useUrlListState } from "@/hooks/use-url-list-state";
+import { WO_FINAL_STATUSES, defaultPeriod, effectivePeriod } from "@/lib/list-period";
 import type { WorkOrderListParams, WorkOrderScope } from "@/types/work-order";
 
 export const FILTER_KEYS = [
@@ -9,8 +10,8 @@ export const FILTER_KEYS = [
   "priority",
   "executor_unit_id",
   "service_category_id",
-  "issued_from",
-  "issued_to",
+  "from",
+  "to",
   "q",
 ] as const;
 
@@ -21,6 +22,7 @@ export type ListFilters = Record<FilterKey, string>;
 export function useWorkOrderListParams(allowedScopes: WorkOrderScope[]) {
   const state = useUrlListState(FILTER_KEYS, allowedScopes);
   const { scope, filters, page } = state;
+  const fallback = React.useMemo(() => defaultPeriod(), []);
 
   const apiParams: WorkOrderListParams = React.useMemo(
     () => ({
@@ -29,13 +31,13 @@ export function useWorkOrderListParams(allowedScopes: WorkOrderScope[]) {
       priority: filters.priority || undefined,
       executor_unit_id: filters.executor_unit_id || undefined,
       service_category_id: filters.service_category_id || undefined,
-      issued_from: filters.issued_from || undefined,
-      issued_to: filters.issued_to || undefined,
+      // Default period: this month. It only narrows finished documents; running ones are always listed.
+      ...effectivePeriod(filters, WO_FINAL_STATUSES, fallback),
       q: filters.q || undefined,
       page,
       per_page: 20,
     }),
-    [filters, page, scope],
+    [fallback, filters, page, scope],
   );
 
   return { ...state, apiParams };

@@ -101,11 +101,20 @@ export interface LocationItem {
   name: string;
 }
 
+export type EquipmentStatus = 'active' | 'under_repair' | 'inactive' | 'disposed';
+
 export interface EquipmentItem {
   id: number;
   code: string;
   name: string;
   location: LocationItem | null;
+  // Added by API_PM.md §2 (optional so older lookups keep type-checking).
+  executor_unit?: { id: number; code: string; display_name: string } | null;
+  brand?: string | null;
+  model?: string | null;
+  serial_number?: string | null;
+  status?: EquipmentStatus | string;
+  status_label?: string;
 }
 
 export interface MaterialItem {
@@ -246,6 +255,8 @@ export interface WorkOrderDetail extends WorkOrderListItem {
   converted_service_request?: { id: number; request_number: string | null } | null;
   source_service_request?: { id: number; request_number: string | null } | null;
   conversion_reason?: string | null;
+  /** WO created from a PM finding (API_PM.md §6). */
+  source_pm_task?: { id: number; number: string; item_description: string | null } | null;
 }
 
 // ---- Request bodies ----
@@ -322,7 +333,7 @@ export interface Paginated<T> {
 
 // ---- Notifications ----
 
-export type DocumentType = 'work_order' | 'service_request';
+export type DocumentType = 'work_order' | 'service_request' | 'pm_task';
 
 export interface AppNotification {
   id: number | string;
@@ -333,6 +344,7 @@ export interface AppNotification {
   document_type?: DocumentType | string | null;
   document_id?: number | null;
   service_request_id?: number | null;
+  pm_task_id?: number | null;
   alarm: boolean;
   read_at: string | null;
   created_at: string;
@@ -502,4 +514,167 @@ export interface PendingApproval {
   priority_label: string;
   waiting_since: string | null;
   overdue: boolean;
+}
+
+// ======================================================================
+// Preventive Maintenance (docs/API_PM.md) — task execution only on mobile
+// ======================================================================
+
+export type PmTaskStatus = 'scheduled' | 'due' | 'in_progress' | 'completed' | 'overdue' | 'skipped';
+
+export type PmInputType = 'ok_nok_na' | 'number' | 'text';
+
+export type PmItemResult = 'ok' | 'not_ok' | 'na';
+
+export type PmTaskScope = 'mine' | 'unit' | 'all';
+
+/** Checklist item definition (template); shown as a read-only preview before the task starts. */
+export interface ChecklistItemDef {
+  id: number;
+  sort_order: number;
+  section: string | null;
+  description: string;
+  input_type: PmInputType;
+  unit: string | null;
+  min_value: number | string | null;
+  max_value: number | string | null;
+  is_required: boolean;
+  photo_required: boolean;
+}
+
+export interface PmTaskItemWorkOrder {
+  id: number;
+  wo_number: string;
+  status: string;
+  status_label: string;
+}
+
+/** Checklist item of a started task (definition snapshot + result). */
+export interface PmTaskItem extends ChecklistItemDef {
+  result: PmItemResult | null;
+  result_label: string | null;
+  value_number: number | string | null;
+  value_text: string | null;
+  notes: string | null;
+  attachments: Attachment[];
+  work_order: PmTaskItemWorkOrder | null;
+}
+
+export interface PmTaskListItem {
+  id: number;
+  number: string;
+  status: PmTaskStatus;
+  status_label: string;
+  due_at: string;
+  due_window_at: string | null;
+  overdue_at: string | null;
+  is_late: boolean;
+  schedule: { id: number; name: string; frequency_label: string } | null;
+  equipment: { id: number; code: string; name: string; location_name: string | null } | null;
+  executor_unit: { id: number; code: string; display_name: string };
+  pic: UserBrief | null;
+  started_at: string | null;
+  completed_at: string | null;
+  has_skip_proposal: boolean;
+  findings_count: number;
+}
+
+export interface PmTaskPermissions {
+  can_start: boolean;
+  can_work: boolean;
+  can_complete: boolean;
+  can_propose_skip: boolean;
+  can_skip: boolean;
+  can_reassign: boolean;
+  can_create_work_order: boolean;
+}
+
+export interface PmSkipProposal {
+  reason: string;
+  by: UserBrief | null;
+  at: string | null;
+}
+
+export interface PmTaskDetail extends PmTaskListItem {
+  checklist_template: { id: number; name: string } | null;
+  tolerance_hours: number | null;
+  estimated_minutes: number | null;
+  started_by: UserBrief | null;
+  completed_by: UserBrief | null;
+  duration_minutes: number | null;
+  notes: string | null;
+  skip_reason: string | null;
+  /** null while status is `skipped` = skipped by the system. */
+  skipped_by: UserBrief | null;
+  skipped_at: string | null;
+  skip_proposal: PmSkipProposal | null;
+  /** Filled while the task has NOT been started (items is empty). */
+  checklist_preview: ChecklistItemDef[];
+  /** Filled after start. */
+  items: PmTaskItem[];
+  materials: WorkOrderMaterial[];
+  /** General task photos (not per item). */
+  attachments: Attachment[];
+  logs: WorkOrderLog[];
+  permissions: PmTaskPermissions;
+}
+
+/** Partial item save (auto-save) — only the changed keys are sent. */
+export interface PmItemPayload {
+  id: number;
+  result?: PmItemResult | null;
+  value_number?: number | null;
+  value_text?: string | null;
+  notes?: string | null;
+}
+
+export interface PmCompleteBody {
+  duration_minutes?: number | null;
+  notes?: string | null;
+  items?: PmItemPayload[];
+  materials?: MaterialInput[];
+}
+
+export interface PmFindingWorkOrderBody {
+  service_category_id: number;
+  priority: Priority;
+  executor_unit_id?: number;
+  request_description?: string;
+}
+
+export interface PmSummaryCounts {
+  due: number;
+  overdue: number;
+  in_progress: number;
+}
+
+export interface PmSummary {
+  mine: PmSummaryCounts;
+  unit: PmSummaryCounts;
+}
+
+export interface EquipmentDetail extends EquipmentItem {
+  stats?: {
+    open_work_orders: number;
+    last_pm_completed_at: string | null;
+    next_pm_due_at: string | null;
+    active_schedules: number;
+  } | null;
+  permissions?: { can_update: boolean; can_delete: boolean };
+}
+
+/** Maintenance history of one equipment (PM tasks + work orders), newest first. */
+export interface HistoryEntry {
+  type: 'pm_task' | 'work_order';
+  id: number;
+  number: string;
+  date: string | null;
+  status: string;
+  status_label: string;
+  title: string | null;
+  actor_name: string | null;
+  /** null for work orders. */
+  findings_count: number | null;
+  /** null for work orders. */
+  is_late: boolean | null;
 }

@@ -99,7 +99,7 @@ class ServiceRequestController extends Controller
             'priority' => ['nullable', 'in:high,medium,low'],
             'office_id' => ['nullable', 'integer'],
             'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'q' => ['nullable', 'string', 'max:100'],
         ]);
     }

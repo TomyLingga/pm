@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useExecutorStaff } from "@/hooks/use-lookups";
 import { errorMessage } from "@/lib/api";
 import { PRIORITY_OPTIONS } from "@/lib/constants";
@@ -43,6 +43,28 @@ interface AssignVariables {
   assignee_ids: number[];
   lead_id: number;
   priority?: WorkOrderPriority;
+}
+
+/** Skeleton shaped like the staff rows below. */
+function StaffSkeleton() {
+  return (
+    <div role="status" aria-live="polite">
+      <span className="sr-only">Memuat staf…</span>
+      <ul className="divide-y rounded-md border" aria-hidden>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <li key={index} className="flex items-center gap-3 px-3 py-2.5">
+            <Skeleton className="h-4 w-4 rounded-sm" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-40 max-w-full" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton className="h-4 w-4 rounded-full" />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function AssignForm({ wo, mode, onDone }: { wo: WorkOrderDetail; mode: AssignMode; onDone: () => void }) {
@@ -97,28 +119,35 @@ function AssignForm({ wo, mode, onDone }: { wo: WorkOrderDetail; mode: AssignMod
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div>
-        <div className="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          <span>Staf {wo.executor_unit.display_name}</span>
+        <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
+          <span>
+            Staf {wo.executor_unit.display_name}
+            {selected.length > 0 ? <span className="tabular"> ({selected.length} dipilih)</span> : null}
+          </span>
           <span>Ketua</span>
         </div>
         {staff.isPending ? (
-          <div className="flex justify-center py-6">
-            <Spinner label="Memuat staf..." />
-          </div>
+          <StaffSkeleton />
         ) : staff.isError ? (
           <ErrorState title="Gagal memuat staf" message={errorMessage(staff.error)} onRetry={() => staff.refetch()} />
         ) : staff.data.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">Unit ini belum memiliki staf.</p>
+          <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+            Unit ini belum memiliki staf.
+          </p>
         ) : (
-          <ul className="max-h-[45dvh] divide-y overflow-y-auto rounded-md border">
+          <ul className="max-h-[45dvh] divide-y overflow-y-auto overscroll-contain rounded-md border">
             {staff.data.map((person) => {
               const checked = selected.includes(person.id);
+              const isLead = leadId === person.id;
               return (
                 <li
                   key={person.id}
-                  className={cn("flex items-center gap-3 px-3 py-2.5", checked && "bg-accent/40")}
+                  className={cn(
+                    "flex items-center gap-2 pl-3 pr-1 transition-colors duration-150",
+                    checked ? "bg-primary-soft/50" : "hover:bg-surface-2/60",
+                  )}
                 >
-                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                  <label className="flex min-h-12 min-w-0 flex-1 cursor-pointer items-center gap-3 py-2">
                     <Checkbox
                       checked={checked}
                       onChange={(event) => toggle(person.id, event.target.checked)}
@@ -133,15 +162,23 @@ function AssignForm({ wo, mode, onDone }: { wo: WorkOrderDetail; mode: AssignMod
                       </span>
                     </span>
                   </label>
-                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs">
+                  <label
+                    className={cn(
+                      "flex h-11 w-14 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md",
+                      !checked && "cursor-not-allowed",
+                    )}
+                  >
                     <Radio
                       name="lead"
-                      checked={leadId === person.id}
+                      checked={isLead}
                       disabled={!checked}
                       onChange={() => setLeadId(person.id)}
                       aria-label={`Jadikan ${person.name} ketua`}
                     />
-                    {leadId === person.id ? <Crown className="h-3.5 w-3.5 text-amber-500" aria-hidden /> : null}
+                    <Crown
+                      className={cn("h-3.5 w-3.5", isLead ? "text-warning" : "text-transparent")}
+                      aria-hidden
+                    />
                   </label>
                 </li>
               );
@@ -162,6 +199,7 @@ function AssignForm({ wo, mode, onDone }: { wo: WorkOrderDetail; mode: AssignMod
         >
           <Select
             id="receive-priority"
+            name="priority"
             value={priority}
             onChange={(event) => setPriority(event.target.value as "" | WorkOrderPriority)}
           >

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Notifications\Channels\ExpoPushChannel;
+use App\Notifications\Concerns\NotifiesByMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -13,7 +14,7 @@ use Illuminate\Notifications\Notification;
  */
 class WorkOrderNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use NotifiesByMail, Queueable;
 
     public function __construct(
         public string $event,
@@ -26,7 +27,12 @@ class WorkOrderNotification extends Notification implements ShouldQueue
 
     public function via($notifiable): array
     {
-        return ['database', ExpoPushChannel::class];
+        return array_merge(['database', ExpoPushChannel::class], $this->mailChannels($notifiable));
+    }
+
+    public function documentUrl(): string
+    {
+        return $this->documentPath('work_order', $this->workOrderId);
     }
 
     public function toArray($notifiable): array

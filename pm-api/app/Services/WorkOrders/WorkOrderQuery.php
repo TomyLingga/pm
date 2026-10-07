@@ -6,6 +6,7 @@ use App\Enums\WorkOrderStatus;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\Org\ExecutorDirectory;
+use App\Support\EndedPeriodFilter;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Builder;
 class WorkOrderQuery
 {
     public const SCOPES = ['mine', 'unit', 'pool', 'assigned', 'executor', 'all'];
+
+    public const FINAL_STATUSES = ['closed', 'cancelled', 'converted'];
 
     public function __construct(private ExecutorDirectory $directory)
     {
@@ -39,6 +42,10 @@ class WorkOrderQuery
         if (! empty($filters['issued_to'])) {
             $query->whereDate('issued_at', '<=', $filters['issued_to']);
         }
+        // Period for finished WOs only (closed / cancelled / converted, by the date they ended);
+        // WOs still running (submitted, received, in progress, completed) are always listed.
+        EndedPeriodFilter::apply($query, self::FINAL_STATUSES, ['closed_at', 'cancelled_at', 'converted_at'],
+            $filters['from'] ?? null, $filters['to'] ?? null);
         if (! empty($filters['q'])) {
             $term = '%'.mb_strtolower(trim($filters['q'])).'%';
             $query->where(function (Builder $q) use ($term) {
@@ -61,7 +68,7 @@ class WorkOrderQuery
             'pool' => $query->where('status', WorkOrderStatus::Submitted->value)->whereIn('executor_unit_id', $executorIds()),
             'assigned' => $query->whereHas('activeAssignments', fn (Builder $q) => $q->where('user_id', $user->id)),
             'executor' => $query->whereIn('executor_unit_id', $executorIds()),
-            'all' => $user->canSeeEverything() ? null : throw new AuthorizationException('Hanya admin/management yang dapat melihat semua WO.'),
+            'all' => $user->canSeeEverything() ? null : throw new AuthorizationException('Hanya admin yang dapat melihat semua WO.'),
         };
     }
 

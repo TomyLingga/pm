@@ -1,5 +1,6 @@
 import { History } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { ActivityLog } from "@/types/common";
 import { Section } from "./section";
 
@@ -20,29 +21,29 @@ export function HistoryTimeline({ logs, statusLabels, title = "Riwayat" }: Histo
       {sorted.length === 0 ? (
         <p className="text-sm text-muted-foreground">Belum ada riwayat.</p>
       ) : (
-        <ol className="relative space-y-4 border-l pl-5">
+        <ol className="relative ml-1.5 space-y-5 border-l pl-5">
           {sorted.map((log, index) => {
             const from = label(log.from_status);
             const to = label(log.to_status);
+            const latest = index === 0;
             return (
               <li key={log.id} className="relative">
                 <span
-                  className={
-                    index === 0
-                      ? "absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-card bg-primary"
-                      : "absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-card bg-muted-foreground/40"
-                  }
+                  className={cn(
+                    "absolute -left-[26.5px] top-1 h-3 w-3 rounded-full border-2 border-card",
+                    latest ? "bg-primary ring-4 ring-primary/15" : "bg-muted-foreground/40",
+                  )}
                   aria-hidden
                 />
-                <p className="text-sm font-semibold">{log.action_label}</p>
+                <p className={cn("text-sm", latest ? "font-semibold" : "font-medium")}>{log.action_label}</p>
                 {from || to ? (
                   <p className="text-xs text-muted-foreground">
                     {from && to && from !== to ? `${from} → ${to}` : to ?? from}
                   </p>
                 ) : null}
-                {log.notes ? <p className="mt-1 whitespace-pre-wrap text-sm">{log.notes}</p> : null}
+                {log.notes ? <p className="mt-1 whitespace-pre-wrap break-words text-sm">{log.notes}</p> : null}
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {log.user?.name ?? "Sistem"} &middot; {formatDateTime(log.created_at)}
+                  {log.user?.name ?? "Sistem"} &middot; <span className="tabular">{formatDateTime(log.created_at)}</span>
                 </p>
               </li>
             );

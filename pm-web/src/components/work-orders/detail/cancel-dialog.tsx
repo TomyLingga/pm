@@ -51,6 +51,7 @@ function CancelForm({ wo, onDone }: { wo: WorkOrderDetail; onDone: () => void })
       <Field label="Alasan pembatalan" htmlFor="cancel-reason" required error={clientError ?? serverError}>
         <Textarea
           id="cancel-reason"
+          name="reason"
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           placeholder="Contoh: masalah sudah teratasi sendiri"

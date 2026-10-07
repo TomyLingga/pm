@@ -1,4 +1,4 @@
-import type { ApprovalStepStatus, Priority, ServiceRequestStatus, WorkOrderStatus } from './types';
+import type { ApprovalStepStatus, PmItemResult, PmTaskStatus, Priority, ServiceRequestStatus, WorkOrderStatus } from './types';
 
 export const colors = {
   primary: '#1E3A8A',
@@ -68,6 +68,23 @@ export const stepStatusTones: Record<ApprovalStepStatus, Tone> = {
   cancelled: { fg: '#64748B', bg: '#F8FAFC', border: '#CBD5E1' },
 };
 
+// PM task: scheduled=slate, due=amber, in_progress=blue, completed=green, overdue=red, skipped=gray
+export const pmStatusTones: Record<PmTaskStatus, Tone> = {
+  scheduled: { fg: '#334155', bg: '#F1F5F9', border: '#94A3B8' },
+  due: { fg: '#B45309', bg: '#FEF3C7', border: '#F59E0B' },
+  in_progress: { fg: '#1D4ED8', bg: '#DBEAFE', border: '#60A5FA' },
+  completed: { fg: '#15803D', bg: '#DCFCE7', border: '#4ADE80' },
+  overdue: { fg: '#B91C1C', bg: '#FEE2E2', border: '#F87171' },
+  skipped: { fg: '#6B7280', bg: '#F3F4F6', border: '#D1D5DB' },
+};
+
+// Checklist result: ok=green, not_ok=red, na=gray
+export const resultTones: Record<PmItemResult, Tone> = {
+  ok: { fg: '#15803D', bg: '#DCFCE7', border: '#4ADE80' },
+  not_ok: { fg: '#B91C1C', bg: '#FEE2E2', border: '#F87171' },
+  na: { fg: '#475569', bg: '#F1F5F9', border: '#94A3B8' },
+};
+
 // high=red, medium=amber, low=gray
 export const priorityTones: Record<Priority, Tone> = {
   high: { fg: '#B91C1C', bg: '#FEE2E2', border: '#F87171' },
@@ -87,6 +104,10 @@ export function requestStatusTone(status: string): Tone {
 
 export function stepStatusTone(status: string): Tone {
   return (stepStatusTones as Record<string, Tone>)[status] ?? fallbackTone;
+}
+
+export function pmStatusTone(status: string): Tone {
+  return (pmStatusTones as Record<string, Tone>)[status] ?? fallbackTone;
 }
 
 export function priorityTone(priority: string): Tone {

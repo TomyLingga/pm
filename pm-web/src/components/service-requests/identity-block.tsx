@@ -1,6 +1,6 @@
+import { InfoList, type InfoItem } from "@/components/common/section";
 import type { Me } from "@/types/auth";
 import type { ServiceRequestIdentity } from "@/types/service-request";
-import { cn } from "@/lib/utils";
 
 export function identityFromMe(me: Me): ServiceRequestIdentity {
   return {
@@ -16,28 +16,36 @@ export function identityFromMe(me: Me): ServiceRequestIdentity {
   };
 }
 
-/** "IDENTITAS KARYAWAN" block (read-only), laid out like the paper form. */
+const linkClassName =
+  "break-all rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+/** "IDENTITAS KARYAWAN" block (read-only): label/value grid, same rhythm as the other detail sections. */
 export function IdentityBlock({ identity, className }: { identity: ServiceRequestIdentity; className?: string }) {
-  const rows: Array<[string, string | null]> = [
-    ["Nama lengkap", identity.name],
-    ["Status karyawan", identity.employment_status],
-    ["NRK", identity.nrk],
-    ["Jabatan", identity.position],
-    ...(identity.superior_name ? ([["Atasan", identity.superior_name]] as Array<[string, string | null]>) : []),
-    ["Divisi / Bagian", identity.bagian],
-    ["Departemen / Sub bagian", identity.sub_bagian],
-    ["Email INL", identity.email],
-    ["No. HP", identity.phone],
+  const items: InfoItem[] = [
+    { label: "Nama lengkap", value: identity.name },
+    { label: "Status karyawan", value: identity.employment_status },
+    { label: "NRK", value: identity.nrk ? <span className="tabular font-mono">{identity.nrk}</span> : null },
+    { label: "Jabatan", value: identity.position },
+    ...(identity.superior_name ? [{ label: "Atasan", value: identity.superior_name }] : []),
+    { label: "Divisi / Bagian", value: identity.bagian },
+    { label: "Departemen / Sub bagian", value: identity.sub_bagian },
+    {
+      label: "Email INL",
+      value: identity.email ? (
+        <a href={`mailto:${identity.email}`} className={linkClassName}>
+          {identity.email}
+        </a>
+      ) : null,
+    },
+    {
+      label: "No. HP",
+      value: identity.phone ? (
+        <a href={`tel:${identity.phone}`} className={`tabular ${linkClassName}`}>
+          {identity.phone}
+        </a>
+      ) : null,
+    },
   ];
 
-  return (
-    <dl className={cn("grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2", className)}>
-      {rows.map(([label, value]) => (
-        <div key={label} className="grid grid-cols-[9.5rem_1fr] gap-2 text-sm">
-          <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-          <dd className="min-w-0 break-words">{value || "-"}</dd>
-        </div>
-      ))}
-    </dl>
-  );
+  return <InfoList items={items} className={className} />;
 }

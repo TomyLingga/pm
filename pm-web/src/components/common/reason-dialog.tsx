@@ -21,6 +21,8 @@ interface ReasonDialogProps {
   description?: React.ReactNode;
   label: string;
   placeholder?: string;
+  /** Initial text (e.g. a reason proposed by someone else). */
+  defaultValue?: string;
   required?: boolean;
   confirmLabel: string;
   confirmVariant?: ButtonProps["variant"];
@@ -37,6 +39,7 @@ interface ReasonDialogProps {
 function ReasonForm({
   label,
   placeholder,
+  defaultValue = "",
   required,
   confirmLabel,
   confirmVariant = "default",
@@ -47,7 +50,7 @@ function ReasonForm({
   onCancel,
   children,
 }: Omit<ReasonDialogProps, "open" | "onOpenChange" | "title" | "description"> & { onCancel: () => void }) {
-  const [text, setText] = React.useState("");
+  const [text, setText] = React.useState(defaultValue);
   const [clientError, setClientError] = React.useState<string | null>(null);
   const serverError = firstError(validationErrors(error), fieldKey);
   const fieldError = clientError ?? serverError;

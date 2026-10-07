@@ -77,7 +77,7 @@ export function AttachmentsPanel({
     const accepted: File[] = [];
     for (const file of Array.from(list)) {
       if (!ATTACHMENT_MIME_TYPES.includes(file.type)) rejected.push(`${file.name}: format tidak didukung`);
-      else if (file.size > MAX_ATTACHMENT_BYTES) rejected.push(`${file.name}: melebihi 5 MB`);
+      else if (file.size > MAX_ATTACHMENT_BYTES) rejected.push(`${file.name}: melebihi 5 MB`);
       else if (accepted.length >= remaining) rejected.push(`${file.name}: melebihi batas ${maxFiles} lampiran`);
       else accepted.push(file);
     }
@@ -147,7 +147,7 @@ export function AttachmentsPanel({
     <Section title="Lampiran" icon={<Paperclip className="h-4 w-4" aria-hidden />}>
       <div className="space-y-4">
         {canUpload ? (
-          <div className="flex flex-col gap-2 rounded-md border border-dashed p-3 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2 rounded-lg border border-dashed bg-surface-2/40 p-3 sm:flex-row sm:items-center">
             {collectionFor ? null : (
               <Select
                 aria-label="Jenis lampiran"
@@ -169,13 +169,13 @@ export function AttachmentsPanel({
               disabled={remaining <= 0}
               loading={!!uploading}
             >
-              {uploading ? null : <Upload />}
-              {uploading ? `Mengunggah ${uploading.done + 1}/${uploading.total}...` : "Unggah lampiran"}
+              {uploading ? null : <Upload aria-hidden />}
+              {uploading ? `Mengunggah ${uploading.done + 1}/${uploading.total}…` : "Unggah lampiran"}
             </Button>
-            <p className="text-xs text-muted-foreground sm:ml-auto">
+            <p className="text-xs text-muted-foreground sm:ml-auto" aria-live="polite">
               {remaining <= 0
                 ? `Batas ${maxFiles} lampiran tercapai.`
-                : `JPG/PNG/WEBP/PDF, maks. 5 MB${Number.isFinite(remaining) ? `. Sisa ${remaining} dari ${maxFiles}` : ""}.`}
+                : `JPG/PNG/WEBP/PDF, maks. 5 MB${Number.isFinite(remaining) ? `. Sisa ${remaining} dari ${maxFiles}` : ""}.`}
             </p>
             <input
               ref={inputRef}
@@ -183,6 +183,8 @@ export function AttachmentsPanel({
               multiple
               accept={ATTACHMENT_MIME_TYPES.join(",")}
               className="hidden"
+              tabIndex={-1}
+              aria-hidden
               onChange={(event) => {
                 void onFiles(event.target.files);
                 event.target.value = "";
@@ -196,45 +198,52 @@ export function AttachmentsPanel({
         ) : (
           groups.map((group) => (
             <div key={group.key}>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{group.label}</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{group.label}</p>
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {group.items.map((attachment) => {
                   const url = sameOriginUrl(attachment.url);
                   return (
-                    <li key={attachment.id} className="relative overflow-hidden rounded-md border bg-card">
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                    <li key={attachment.id} className="relative min-w-0 overflow-hidden rounded-lg border bg-card">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      >
                         {attachment.mime_type.startsWith("image/") ? (
                           // eslint-disable-next-line @next/next/no-img-element -- authenticated same-origin file
                           <img
                             src={url}
                             alt={attachment.original_name}
                             loading="lazy"
-                            className="aspect-square w-full bg-muted object-cover"
+                            width={320}
+                            height={320}
+                            className="aspect-square h-auto w-full object-cover"
                           />
                         ) : (
-                          <span className="flex aspect-square w-full flex-col items-center justify-center gap-2 bg-muted p-2 text-center">
+                          <span className="flex aspect-square w-full flex-col items-center justify-center gap-2 p-2 text-center">
                             <FileText className="h-8 w-8 text-muted-foreground" aria-hidden />
                             <span className="line-clamp-2 break-all text-xs">{attachment.original_name}</span>
                           </span>
                         )}
                       </a>
-                      <div className="space-y-0.5 p-2">
+                      <div className="space-y-0.5 border-t p-2">
                         <p className="truncate text-xs font-medium" title={attachment.original_name}>
                           {attachment.original_name}
                         </p>
                         <p className="truncate text-[11px] text-muted-foreground">
                           {formatBytes(attachment.size_bytes)} &middot; {attachment.uploaded_by?.name}
                         </p>
-                        <p className="text-[11px] text-muted-foreground">{formatDateTime(attachment.created_at)}</p>
+                        <p className="tabular text-[11px] text-muted-foreground">{formatDateTime(attachment.created_at)}</p>
                       </div>
                       {canDelete(attachment) ? (
                         <button
                           type="button"
                           onClick={() => setToDelete(attachment)}
-                          className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white hover:bg-destructive focus:outline-none focus:ring-2 focus:ring-ring"
+                          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border bg-background/85 text-foreground shadow-sm backdrop-blur-sm transition-colors duration-150 hover:border-danger hover:bg-danger hover:text-danger-on-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           aria-label={`Hapus ${attachment.original_name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
                         </button>
                       ) : null}
                     </li>

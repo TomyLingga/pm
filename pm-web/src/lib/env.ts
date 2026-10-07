@@ -6,7 +6,7 @@ export const PORTAL_LAUNCH_URL = process.env.NEXT_PUBLIC_PORTAL_LAUNCH_URL || ""
 /** Portal home page (target after logout). */
 export const PORTAL_HOME_URL = process.env.NEXT_PUBLIC_PORTAL_HOME_URL || "";
 
-/** UUID of PM-App in the Portal `aplikasi` table. */
+/** UUID of PrevenTech in the Portal `aplikasi` table. */
 export const PORTAL_APP_ID = process.env.NEXT_PUBLIC_PORTAL_APP_ID || "";
 
 /** Where to send a browser that has no valid session. */

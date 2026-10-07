@@ -2,36 +2,252 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * PM-App design tokens (see DESIGN.md).
+ * One chromatic accent (INL teal). Hierarchy comes from a surface ladder + hairline borders, not shadows.
+ * Dark mode is the `.dark` class on <html> (set before paint by the theme script); `color-scheme` follows it.
+ */
 @layer base {
   :root {
     color-scheme: light;
-    --background: 210 20% 97%;
-    --foreground: 222 47% 11%;
+
+    --background: 220 20% 97%;
+    --foreground: 222 25% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 25% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 222 25% 11%;
+    --surface-1: 0 0% 100%;
+    --surface-2: 220 18% 95.5%;
+    --surface-3: 220 16% 92%;
+
     --primary: 174 72% 26%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 93%;
-    --secondary-foreground: 222 47% 15%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 16% 40%;
-    --accent: 174 40% 93%;
+    --primary-soft: 174 45% 92%;
+    --primary-soft-foreground: 174 72% 18%;
+    --secondary: 220 16% 94%;
+    --secondary-foreground: 222 25% 15%;
+    --muted: 220 16% 95%;
+    --muted-foreground: 217 10% 42%;
+    --accent: 174 45% 93%;
     --accent-foreground: 174 72% 18%;
-    --destructive: 0 72% 46%;
+    --destructive: 0 70% 46%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 20% 87%;
-    --input: 214 20% 82%;
+
+    --border: 220 14% 89%;
+    --input: 220 14% 84%;
     --ring: 174 72% 32%;
     --radius: 0.5rem;
+    --shadow: 222 30% 10%;
+    --edge-highlight: 0 0% 100% / 0;
+
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 222 25% 11%;
+    --sidebar-border: 220 14% 89%;
+
+    --success: 152 60% 36%;
+    --success-foreground: 152 70% 20%;
+    --success-soft: 150 55% 93%;
+    --success-on-solid: 0 0% 100%;
+    --warning: 36 90% 45%;
+    --warning-foreground: 30 80% 24%;
+    --warning-soft: 40 95% 92%;
+    --warning-on-solid: 0 0% 100%;
+    --danger: 0 70% 50%;
+    --danger-foreground: 0 65% 32%;
+    --danger-soft: 0 85% 95%;
+    --danger-on-solid: 0 0% 100%;
+    --info: 215 85% 52%;
+    --info-foreground: 218 70% 32%;
+    --info-soft: 214 90% 94%;
+    --info-on-solid: 0 0% 100%;
+
+    /* Categorical chart palette: teal, blue, violet, amber, green, red, indigo, orange */
+    --chart-1: 174 72% 30%;
+    --chart-2: 212 88% 54%;
+    --chart-3: 258 80% 62%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 152 60% 40%;
+    --chart-6: 0 72% 55%;
+    --chart-7: 234 75% 62%;
+    --chart-8: 24 92% 54%;
+    --chart-neutral: 217 10% 60%;
+    --chart-grid: 220 14% 89%;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --background: 228 14% 5%;
+    --foreground: 216 20% 93%;
+    --card: 225 12% 8.5%;
+    --card-foreground: 216 20% 93%;
+    --popover: 225 12% 9.5%;
+    --popover-foreground: 216 20% 93%;
+    --surface-1: 225 12% 8.5%;
+    --surface-2: 225 11% 11%;
+    --surface-3: 225 10% 14%;
+
+    --primary: 172 55% 44%;
+    --primary-foreground: 228 14% 6%;
+    --primary-soft: 172 40% 13%;
+    --primary-soft-foreground: 172 60% 70%;
+    --secondary: 225 11% 12%;
+    --secondary-foreground: 216 15% 88%;
+    --muted: 225 11% 12%;
+    --muted-foreground: 218 8% 62%;
+    --accent: 172 40% 13%;
+    --accent-foreground: 172 60% 72%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 225 10% 17%;
+    --input: 225 10% 23%;
+    --ring: 172 55% 44%;
+    --shadow: 228 30% 2%;
+    --edge-highlight: 0 0% 100% / 0.04;
+
+    --sidebar: 228 14% 5%;
+    --sidebar-foreground: 216 20% 93%;
+    --sidebar-border: 225 10% 15%;
+
+    --success: 152 55% 46%;
+    --success-foreground: 150 60% 70%;
+    --success-soft: 152 45% 12%;
+    --success-on-solid: 228 14% 6%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 40 90% 70%;
+    --warning-soft: 38 60% 13%;
+    --warning-on-solid: 228 14% 6%;
+    --danger: 0 72% 58%;
+    --danger-foreground: 0 85% 76%;
+    --danger-soft: 0 45% 14%;
+    --danger-on-solid: 0 0% 100%;
+    --info: 213 90% 62%;
+    --info-foreground: 213 90% 76%;
+    --info-soft: 215 55% 14%;
+    --info-on-solid: 228 14% 6%;
+
+    --chart-1: 172 55% 48%;
+    --chart-2: 212 90% 64%;
+    --chart-3: 258 85% 72%;
+    --chart-4: 38 92% 58%;
+    --chart-5: 152 55% 52%;
+    --chart-6: 0 75% 64%;
+    --chart-7: 234 80% 72%;
+    --chart-8: 24 92% 62%;
+    --chart-neutral: 218 8% 55%;
+    --chart-grid: 225 10% 17%;
   }
 
   * {
     @apply border-border;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+
+  /* No rubber-band on desktop; keep pull-to-refresh on touch devices. */
+  @media (pointer: fine) {
+    html {
+      overscroll-behavior: none;
+    }
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-balance tracking-tight;
+  }
+
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
+
+  /* Native selects in Windows dark mode need explicit colours. */
+  select,
+  option {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="time"]::-webkit-calendar-picker-indicator,
+  .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.25);
+  }
+
+  /* Thin, theme-aware scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Numbers that align in columns (counts, money, timestamps). */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Lifted panel: card surface + hairline + faint top highlight in dark mode. */
+  .panel {
+    @apply rounded-xl border bg-card text-card-foreground shadow-sm shadow-edge;
+  }
+
+  /* Subtle technical grid for empty canvases / hero areas. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.6) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Elements that should not transition (used around theme switch to avoid colour "smearing"). */
+  .no-transition * {
+    transition: none !important;
   }
 }

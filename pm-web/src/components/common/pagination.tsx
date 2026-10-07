@@ -16,7 +16,7 @@ export function Pagination({ meta, onPageChange, itemLabel = "data", disabled }:
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-      <p className="text-sm text-muted-foreground">
+      <p className="tabular text-sm text-muted-foreground">
         {total > 0 ? (
           <>
             Menampilkan <span className="font-medium text-foreground">{from ?? 0}</span>&ndash;
@@ -39,7 +39,7 @@ export function Pagination({ meta, onPageChange, itemLabel = "data", disabled }:
             <ChevronLeft />
             <span className="hidden sm:inline">Sebelumnya</span>
           </Button>
-          <span className="min-w-[6rem] text-center text-sm">
+          <span className="tabular min-w-[6rem] text-center text-sm text-muted-foreground">
             Hal. {page} / {lastPage}
           </span>
           <Button

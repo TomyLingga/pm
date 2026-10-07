@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -63,11 +64,13 @@ function ApproveForm({ request, onDone }: { request: ServiceRequestDetail; onDon
         >
           <Select
             id="assigned_executor_id"
+            name="assigned_executor_id"
             value={executorId}
             onChange={(event) => setExecutorId(event.target.value)}
             disabled={staff.isPending || mutation.isPending}
+            invalid={!!firstError(errors, "assigned_executor_id")}
           >
-            <option value="">{staff.isPending ? "Memuat staf..." : "Tidak ditunjuk"}</option>
+            <option value="">{staff.isPending ? "Memuat staf…" : "Tidak ditunjuk"}</option>
             {staff.data?.map((person) => (
               <option key={person.id} value={String(person.id)}>
                 {person.name}
@@ -77,14 +80,22 @@ function ApproveForm({ request, onDone }: { request: ServiceRequestDetail; onDon
           </Select>
         </Field>
       ) : null}
-      <Field label="Catatan (opsional)" htmlFor="approve-notes" error={firstError(errors, "notes")}>
+      <Field
+        label="Catatan (opsional)"
+        htmlFor="approve-notes"
+        error={firstError(errors, "notes")}
+        hint="Tampil di blok Pengesahan dan dibaca pemohon serta pelaksana."
+      >
         <Textarea
           id="approve-notes"
+          name="notes"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           rows={3}
           maxLength={2000}
-          placeholder="Catatan untuk pemohon/pelaksana"
+          placeholder="Contoh: setuju, gunakan vendor yang sudah ada…"
+          disabled={mutation.isPending}
+          invalid={!!firstError(errors, "notes")}
         />
       </Field>
       <FieldError message={unmatchedValidationMessage(mutation.error, ["notes", "assigned_executor_id"])} />
@@ -93,7 +104,8 @@ function ApproveForm({ request, onDone }: { request: ServiceRequestDetail; onDon
           Batal
         </Button>
         <Button type="submit" loading={mutation.isPending}>
-          Setujui
+          {mutation.isPending ? null : <CheckCircle2 aria-hidden />}
+          {isLeadStep ? "Setujui & Teruskan" : "Setujui Form Request"}
         </Button>
       </DialogFooter>
     </form>

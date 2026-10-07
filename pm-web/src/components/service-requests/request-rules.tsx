@@ -16,10 +16,10 @@ export function RequestRules({
   }
   return (
     <div className={cn("space-y-3", className)}>
-      {rules ? <p className="whitespace-pre-wrap text-sm italic leading-relaxed">{rules}</p> : null}
+      {rules ? <p className="max-w-prose whitespace-pre-wrap text-sm leading-relaxed">{rules}</p> : null}
       {contactFooter ? (
-        <p className="flex items-start gap-2 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+        <p className="flex items-start gap-2 rounded-md border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
           <span className="whitespace-pre-wrap">{contactFooter}</span>
         </p>
       ) : null}

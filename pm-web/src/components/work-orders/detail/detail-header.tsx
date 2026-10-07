@@ -1,31 +1,59 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { Pencil, Printer } from "lucide-react";
+import { PageHeader } from "@/components/common/page-header";
+import { Button } from "@/components/ui/button";
 import { formatDateTimeLong } from "@/lib/format";
+import { workOrderPdfUrl } from "@/lib/work-orders";
 import type { WorkOrderDetail } from "@/types/work-order";
 import { PriorityBadge, StatusBadge } from "@/components/common/badges";
 
+/**
+ * Page header of the detail page: number + status/priority as the eyebrow, the request as the title,
+ * document-level actions (edit, PDF) on the right. Workflow actions live in `ActionBar`.
+ */
 export function DetailHeader({ wo }: { wo: WorkOrderDetail }) {
   return (
-    <div className="space-y-2">
-      <Link
-        href="/work-orders"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Daftar Work Order
-      </Link>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="break-all font-mono text-lg font-bold sm:text-2xl">{wo.wo_number}</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={wo.status} label={wo.status_label} className="px-3 py-1 text-xs" />
+    <PageHeader
+      backHref="/work-orders"
+      backLabel="Daftar Work Order"
+      eyebrow={
+        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <span className="font-mono text-sm font-semibold text-foreground">{wo.wo_number}</span>
+          <StatusBadge status={wo.status} label={wo.status_label} />
           <PriorityBadge priority={wo.priority} label={`Prioritas ${wo.priority_label}`} />
-        </div>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Diterbitkan {formatDateTimeLong(wo.issued_at)} oleh{" "}
-        <span className="font-medium text-foreground">{wo.requester.name}</span>
-        {wo.requester_sub_bagian_name ? ` (${wo.requester_sub_bagian_name})` : ""}
-      </p>
-    </div>
+        </span>
+      }
+      title={
+        <>
+          <span className="sr-only">{wo.wo_number}: </span>
+          <span className="line-clamp-2 text-pretty break-words">{wo.request_description}</span>
+        </>
+      }
+      description={
+        <>
+          Diterbitkan <span className="tabular">{formatDateTimeLong(wo.issued_at)}</span> oleh{" "}
+          <span className="font-medium text-foreground">{wo.requester.name}</span>
+          {wo.requester_sub_bagian_name ? ` (${wo.requester_sub_bagian_name})` : ""}
+        </>
+      }
+      actions={
+        <>
+          {wo.permissions.can_update ? (
+            <Button asChild variant="outline" className="flex-1 sm:flex-none">
+              <Link href={`/work-orders/${wo.id}/edit`}>
+                <Pencil />
+                Ubah
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline" className="flex-1 sm:flex-none">
+            <a href={workOrderPdfUrl(wo.id)} target="_blank" rel="noopener noreferrer">
+              <Printer />
+              Cetak PDF
+            </a>
+          </Button>
+        </>
+      }
+    />
   );
 }

@@ -41,7 +41,7 @@ export function FilePicker({ files, onChange, max, accept = PHOTO_MIME_TYPES, di
       if (!accept.includes(file.type)) {
         rejected.push(`${file.name}: format harus ${formats}`);
       } else if (file.size > MAX_ATTACHMENT_BYTES) {
-        rejected.push(`${file.name}: ukuran ${formatBytes(file.size)} melebihi 5 MB`);
+        rejected.push(`${file.name}: ukuran ${formatBytes(file.size)} melebihi 5 MB`);
       } else if (accepted.length >= remaining) {
         rejected.push(`${file.name}: melebihi batas ${max} ${noun}`);
       } else {
@@ -70,28 +70,34 @@ export function FilePicker({ files, onChange, max, accept = PHOTO_MIME_TYPES, di
           return (
             <figure
               key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
-              className="relative aspect-square overflow-hidden rounded-md border bg-muted"
+              className="relative aspect-square overflow-hidden rounded-lg border bg-surface-2"
             >
               {isImage && previews[index] ? (
                 // eslint-disable-next-line @next/next/no-img-element -- local blob preview
-                <img src={previews[index]} alt={file.name} className="h-full w-full object-cover" />
+                <img
+                  src={previews[index]}
+                  alt={file.name}
+                  width={240}
+                  height={240}
+                  className="h-full w-full object-cover"
+                />
               ) : !isImage ? (
                 <span className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center">
                   <FileText className="h-7 w-7 text-muted-foreground" aria-hidden />
                   <span className="line-clamp-2 break-all text-[11px]">{file.name}</span>
                 </span>
               ) : null}
-              <figcaption className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
+              <figcaption className="tabular absolute inset-x-0 bottom-0 truncate border-t bg-background/85 px-1.5 py-0.5 text-[10px] text-muted-foreground backdrop-blur-sm">
                 {formatBytes(file.size)}
               </figcaption>
               <button
                 type="button"
                 onClick={() => onChange(files.filter((_, i) => i !== index))}
                 disabled={disabled}
-                className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full border bg-background/85 text-foreground shadow-sm backdrop-blur-sm transition-colors duration-150 hover:border-danger hover:bg-danger hover:text-danger-on-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                 aria-label={`Hapus ${file.name}`}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3.5 w-3.5" aria-hidden />
               </button>
             </figure>
           );
@@ -103,7 +109,7 @@ export function FilePicker({ files, onChange, max, accept = PHOTO_MIME_TYPES, di
             onClick={() => inputRef.current?.click()}
             disabled={disabled}
             className={cn(
-              "flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring",
+              "flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed bg-surface-2/40 text-muted-foreground transition-colors duration-150 hover:border-primary/60 hover:bg-primary-soft/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               disabled && "cursor-not-allowed opacity-50",
             )}
           >
@@ -112,8 +118,8 @@ export function FilePicker({ files, onChange, max, accept = PHOTO_MIME_TYPES, di
           </button>
         ) : null}
       </div>
-      <p className="text-xs text-muted-foreground">
-        {formats}, maks. 5 MB per {noun}. {files.length}/{max} {noun} dipilih.
+      <p className="tabular text-xs text-muted-foreground" aria-live="polite">
+        {formats}, maks. 5&nbsp;MB per {noun}. {files.length}/{max} {noun} dipilih.
       </p>
       <input
         ref={inputRef}
@@ -121,6 +127,8 @@ export function FilePicker({ files, onChange, max, accept = PHOTO_MIME_TYPES, di
         accept={accept.join(",")}
         multiple
         className="hidden"
+        tabIndex={-1}
+        aria-hidden
         onChange={(event) => {
           addFiles(event.target.files);
           event.target.value = "";

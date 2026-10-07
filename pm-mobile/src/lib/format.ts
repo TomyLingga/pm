@@ -110,3 +110,20 @@ export function digitsOnly(input: string): string {
 export function groupThousands(digits: string): string {
   return digits.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
+
+/** Human span for a positive duration in ms: "15 menit", "2 jam", "3 hari". */
+export function formatSpan(ms: number): string {
+  const minutes = Math.max(0, Math.floor(ms / 60000));
+  if (minutes < 60) return `${Math.max(1, minutes)} menit`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} jam`;
+  return `${Math.floor(hours / 24)} hari`;
+}
+
+/** Number → user-facing text with a decimal comma (385.5 → "385,5"). */
+export function formatNumber(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '';
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return '';
+  return String(n).replace('.', ',');
+}

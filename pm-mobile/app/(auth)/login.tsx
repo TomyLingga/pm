@@ -67,7 +67,7 @@ export default function LoginScreen() {
             <View style={styles.logo}>
               <Ionicons name="construct" size={40} color={colors.white} />
             </View>
-            <Text style={styles.appName}>PM-App INL</Text>
+            <Text style={styles.appName}>PrevenTech</Text>
             <Text style={styles.subtitle}>Work Order & Preventive Maintenance{'\n'}PT Industri Nabati Lestari</Text>
           </View>
 

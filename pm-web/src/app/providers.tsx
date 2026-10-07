@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ApiError } from "@/lib/api";
 
@@ -30,9 +31,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(makeQueryClient);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

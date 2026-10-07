@@ -39,7 +39,7 @@ export function SuperiorCombobox({ id, selected, onChange, disabled, invalid }: 
       fetcher={(q, signal) => searchSuperiorCandidates(q, signal)}
       getKey={(item) => item.id}
       minChars={0}
-      placeholder="Cari nama atasan..."
+      placeholder="Cari nama atasan…"
       emptyText="Tidak ada kandidat atasan yang cocok."
       disabled={disabled}
       invalid={invalid}

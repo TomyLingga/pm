@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useStaff } from '@/hooks/useWorkOrder';
 import { errorMessage } from '@/lib/api';
 import { colors, radius } from '@/lib/theme';
-import { FieldLabel } from '../ui';
+import { FieldLabel } from './ui';
 
 function Row({
   id,
@@ -41,24 +41,27 @@ function Row({
   );
 }
 
-/** Optional "Tunjuk pelaksana" single-select used when the executor lead approves a Form Request. */
-export function ExecutorPicker({
-  executorUnitId,
-  value,
-  onChange,
-  enabled,
-}: {
+interface StaffRadioListProps {
   executorUnitId: number;
   value: number | null;
   onChange: (id: number | null) => void;
+  /** Load the staff list only while the picker is visible. */
   enabled: boolean;
-}) {
+  label: string;
+  /** Adds a "none" choice on top (value null). */
+  noneOption?: { title: string; subtitle?: string };
+}
+
+/** Single-select list of an executor unit's staff (`/executor-units/{id}/staff`). */
+export function StaffRadioList({ executorUnitId, value, onChange, enabled, label, noneOption }: StaffRadioListProps) {
   const staff = useStaff(executorUnitId, enabled);
 
   return (
     <View style={{ gap: 8 }}>
-      <FieldLabel>Tunjuk pelaksana (opsional)</FieldLabel>
-      <Row id={null} title="Tidak menunjuk" subtitle="Semua staf unit pelaksana dapat menyelesaikan" value={value} onChange={onChange} />
+      <FieldLabel>{label}</FieldLabel>
+      {noneOption && (
+        <Row id={null} title={noneOption.title} subtitle={noneOption.subtitle} value={value} onChange={onChange} />
+      )}
       {staff.isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginVertical: 12 }} />
       ) : staff.isError ? (
@@ -69,12 +72,13 @@ export function ExecutorPicker({
             key={s.id}
             id={s.id}
             title={s.name}
-            subtitle={[s.nrk, s.position].filter(Boolean).join(' · ')}
+            subtitle={[s.nrk, s.position, s.is_lead ? 'Pimpinan' : null].filter(Boolean).join(' · ')}
             value={value}
             onChange={onChange}
           />
         ))
       )}
+      {staff.data?.length === 0 && <Text style={styles.subtitle}>Tidak ada staf di unit ini.</Text>}
     </View>
   );
 }

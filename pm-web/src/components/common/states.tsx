@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
-export function LoadingState({ label = "Memuat data...", className }: { label?: string; className?: string }) {
+export function LoadingState({ label = "Memuat data…", className }: { label?: string; className?: string }) {
   return (
-    <div className={cn("flex items-center justify-center py-16", className)}>
+    <div className={cn("flex items-center justify-center py-16", className)} aria-live="polite">
       <Spinner label={label} />
     </div>
   );
@@ -25,12 +25,15 @@ export function ErrorState({
 }) {
   return (
     <div
+      role="alert"
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-destructive/40 bg-destructive/5 px-4 py-10 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-danger/40 bg-danger-soft/50 px-4 py-10 text-center",
         className,
       )}
     >
-      <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden />
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-danger-soft text-danger">
+        <AlertTriangle className="h-5 w-5" aria-hidden />
+      </span>
       <div>
         <p className="font-semibold">{title}</p>
         {message ? <p className="mt-1 text-sm text-muted-foreground">{message}</p> : null}
@@ -60,16 +63,24 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-card px-4 py-12 text-center",
+        "bg-grid relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border border-dashed px-4 py-12 text-center",
         className,
       )}
     >
-      {icon ?? <Inbox className="h-8 w-8 text-muted-foreground" aria-hidden />}
-      <div>
-        <p className="font-semibold">{title}</p>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,hsl(var(--background))_85%)]"
+        aria-hidden
+      />
+      <div className="relative flex flex-col items-center gap-3">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl border bg-card text-muted-foreground shadow-sm shadow-edge">
+          {icon ?? <Inbox className="h-5 w-5" aria-hidden />}
+        </span>
+        <div>
+          <p className="font-semibold">{title}</p>
+          {description ? <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p> : null}
+        </div>
+        {action}
       </div>
-      {action}
     </div>
   );
 }

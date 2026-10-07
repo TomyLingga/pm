@@ -39,9 +39,9 @@ class WorkOrderAuthorizationTest extends TestCase
             $this->actingAsUser($denied)->getJson($url)->assertForbidden();
         }
 
-        $manager = User::factory()->create();
-        $manager->assignRole(User::ROLE_MANAGEMENT);
-        $this->actingAsUser($manager)->getJson($url)->assertOk();
+        $admin = User::factory()->create();
+        $admin->assignRole(User::ROLE_ADMIN);
+        $this->actingAsUser($admin)->getJson($url)->assertOk();
     }
 
     public function test_only_executor_staff_can_pick_and_only_leads_can_receive(): void

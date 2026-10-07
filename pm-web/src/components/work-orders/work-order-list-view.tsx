@@ -5,14 +5,15 @@ import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { FileSpreadsheet, Plus } from "lucide-react";
 import { useCurrentUser } from "@/components/layout/current-user";
+import { PageHeader } from "@/components/common/page-header";
 import { Pagination } from "@/components/common/pagination";
+import { ScopeTabs } from "@/components/common/scope-tabs";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
-import { hasGlobalRole, isExecutorStaff } from "@/lib/auth";
-import { SCOPE_LABELS } from "@/lib/constants";
+import { isAdmin, isExecutorStaff } from "@/lib/auth";
+import { SCOPE_DESCRIPTIONS, SCOPE_LABELS } from "@/lib/constants";
 import { queryKeys } from "@/lib/query-keys";
 import { listWorkOrders, workOrderExportUrl } from "@/lib/work-orders";
 import type { Me } from "@/types/auth";
@@ -25,16 +26,102 @@ import { WorkOrderTable } from "./work-order-table";
 function scopesFor(me: Me): WorkOrderScope[] {
   const scopes: WorkOrderScope[] = ["mine", "unit"];
   if (isExecutorStaff(me)) scopes.push("pool", "assigned", "executor");
-  if (hasGlobalRole(me, "admin", "management")) scopes.push("all");
+  if (isAdmin(me)) scopes.push("all");
   return scopes;
 }
 
-function ListSkeleton() {
+/** Column widths mirror `WorkOrderTable` so the skeleton does not jump when data arrives. */
+const SKELETON_COLUMNS = [
+  "w-[170px]",
+  "w-[120px]",
+  "min-w-0 flex-1",
+  "w-[170px]",
+  "w-[170px]",
+  "w-[100px]",
+  "w-[120px]",
+  "w-[160px]",
+] as const;
+
+function TableRowSkeleton() {
   return (
-    <div className="space-y-3" aria-hidden>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Skeleton key={index} className="h-20 w-full" />
-      ))}
+    <div className="flex items-start gap-3 border-b px-3 py-3 last:border-0">
+      <div className={SKELETON_COLUMNS[0]}>
+        <Skeleton className="h-3.5 w-28" />
+      </div>
+      <div className={SKELETON_COLUMNS[1]}>
+        <Skeleton className="h-3 w-24" />
+      </div>
+      <div className={`${SKELETON_COLUMNS[2]} space-y-1.5`}>
+        <Skeleton className="h-3.5 w-[85%]" />
+        <Skeleton className="h-3 w-40" />
+      </div>
+      <div className={`${SKELETON_COLUMNS[3]} space-y-1.5`}>
+        <Skeleton className="h-3.5 w-32" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+      <div className={`${SKELETON_COLUMNS[4]} space-y-1.5`}>
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="h-3 w-28" />
+      </div>
+      <div className={SKELETON_COLUMNS[5]}>
+        <Skeleton className="h-5 w-20 rounded-full" />
+      </div>
+      <div className={SKELETON_COLUMNS[6]}>
+        <Skeleton className="h-5 w-24 rounded-full" />
+      </div>
+      <div className={`${SKELETON_COLUMNS[7]} space-y-1.5`}>
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+    </div>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <li className="panel p-4">
+      <div className="flex items-start justify-between gap-2">
+        <Skeleton className="h-3.5 w-28" />
+        <Skeleton className="h-5 w-24 rounded-full" />
+      </div>
+      <div className="mt-3 space-y-1.5">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-3/4" />
+      </div>
+      <div className="mt-3 space-y-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <Skeleton className="h-3.5 w-3.5 rounded-sm" />
+            <Skeleton className="h-3 w-40" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="mt-3 h-5 w-20 rounded-full" />
+    </li>
+  );
+}
+
+/** Skeleton shaped like the list: a table on desktop, cards on phones. */
+export function WorkOrderListSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div aria-hidden>
+      <div className="panel hidden overflow-hidden md:block">
+        <div className="flex h-10 items-center gap-3 border-b bg-surface-2/70 px-3">
+          {SKELETON_COLUMNS.map((width, index) => (
+            <div key={index} className={width}>
+              <Skeleton className="h-2.5 w-16" />
+            </div>
+          ))}
+        </div>
+        {Array.from({ length: rows }).map((_, index) => (
+          <TableRowSkeleton key={index} />
+        ))}
+      </div>
+      <ul className="space-y-3 md:hidden">
+        {Array.from({ length: Math.min(rows, 4) }).map((_, index) => (
+          <CardSkeleton key={index} />
+        ))}
+      </ul>
     </div>
   );
 }
@@ -57,36 +144,35 @@ export function WorkOrderListView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Work Order</h1>
-          <p className="text-sm text-muted-foreground">Permintaan perbaikan &amp; dukungan ke unit pelaksana.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" className="flex-1 sm:flex-none">
-            <a href={workOrderExportUrl(apiParams)} download>
-              <FileSpreadsheet />
-              Export Excel
-            </a>
-          </Button>
-          <Button asChild className="flex-1 sm:flex-none">
-            <Link href="/work-orders/new">
-              <Plus />
-              Buat WO
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Work Order"
+        description="Permintaan perbaikan & dukungan ke unit pelaksana."
+        actions={
+          <>
+            <Button asChild variant="outline" className="flex-1 sm:flex-none">
+              <a href={workOrderExportUrl(apiParams)} download>
+                <FileSpreadsheet />
+                Export Excel
+              </a>
+            </Button>
+            <Button asChild className="flex-1 sm:flex-none">
+              <Link href="/work-orders/new">
+                <Plus />
+                Buat WO
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      <Tabs value={scope} onValueChange={(value) => setScope(value as WorkOrderScope)}>
-        <TabsList className="w-full justify-start sm:w-auto">
-          {scopes.map((item) => (
-            <TabsTrigger key={item} value={item}>
-              {SCOPE_LABELS[item]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <ScopeTabs
+        scopes={scopes}
+        value={scope}
+        labels={SCOPE_LABELS}
+        descriptions={SCOPE_DESCRIPTIONS}
+        onChange={setScope}
+        ariaLabel="Lingkup daftar Work Order"
+      />
 
       <WorkOrderFilters
         filters={filters}
@@ -96,7 +182,7 @@ export function WorkOrderListView() {
       />
 
       {query.isPending ? (
-        <ListSkeleton />
+        <WorkOrderListSkeleton />
       ) : query.isError ? (
         <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
       ) : items.length === 0 ? (
@@ -125,8 +211,11 @@ export function WorkOrderListView() {
           }
         />
       ) : (
-        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
-          <div className="hidden overflow-hidden rounded-lg border bg-card shadow-sm md:block">
+        <div
+          className={query.isPlaceholderData ? "opacity-60 transition-opacity duration-150" : undefined}
+          aria-busy={query.isPlaceholderData || undefined}
+        >
+          <div className="panel hidden overflow-hidden md:block">
             <WorkOrderTable items={items} />
           </div>
           <div className="md:hidden">

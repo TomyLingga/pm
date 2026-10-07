@@ -1,8 +1,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/** Lifted panel: card surface, hairline border, faint top highlight in dark mode. 12px corners. */
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
+  <div
+    ref={ref}
+    className={cn("rounded-xl border bg-card text-card-foreground shadow-sm shadow-edge", className)}
+    {...props}
+  />
 ));
 Card.displayName = "Card";
 
@@ -15,7 +20,7 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h2 ref={ref} className={cn("text-base font-semibold leading-tight", className)} {...props} />
+    <h2 ref={ref} className={cn("text-base font-semibold leading-tight tracking-tight", className)} {...props} />
   ),
 );
 CardTitle.displayName = "CardTitle";

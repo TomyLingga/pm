@@ -146,6 +146,8 @@ export interface WorkOrderDetail extends WorkOrderListItem {
   /** This WO was created from a Form Request. */
   source_service_request?: { id: number; request_number: string | null } | null;
   conversion_reason?: string | null;
+  /** This WO was created from a finding of a PM task. */
+  source_pm_task?: { id: number; number: string; item_description: string | null } | null;
 }
 
 /* ---------- Request payloads ---------- */
@@ -222,6 +224,9 @@ export interface WorkOrderListParams {
   equipment_id?: string;
   issued_from?: string;
   issued_to?: string;
+  /** Period for finished WOs only (closed/cancelled/converted, by end date). */
+  from?: string;
+  to?: string;
   q?: string;
   sort?: WorkOrderSort;
   page?: number;

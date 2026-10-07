@@ -5,6 +5,7 @@ import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthContext';
+import { usePmSummary } from '@/hooks/usePmTask';
 import { approvalApi, notificationApi } from '@/lib/endpoints';
 import { queryKeys } from '@/lib/queryClient';
 import { colors } from '@/lib/theme';
@@ -36,6 +37,10 @@ export default function TabsLayout() {
     refetchInterval: 60_000,
   });
   const pendingCount = pending.data ?? 0;
+
+  // PM badge = my tasks that are due or overdue (API_PM.md §5 summary).
+  const pmSummary = usePmSummary(status === 'signedIn' && isExecutor);
+  const pmCount = (pmSummary.data?.mine?.due ?? 0) + (pmSummary.data?.mine?.overdue ?? 0);
   const badge = (n: number) => (n > 0 ? (n > 99 ? '99+' : n) : undefined);
 
   return (
@@ -51,21 +56,24 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
+      {/* Executor-unit staff only: WO (pool + my assignments) and PM tasks. */}
       <Tabs.Screen
-        name="pool"
+        name="work"
         options={{
-          title: 'Pool',
-          headerTitle: 'Pool WO (belum diambil)',
+          title: 'WO',
+          headerTitle: 'Work Order Unit Pelaksana',
           href: isExecutor ? undefined : null,
-          tabBarIcon: icon('file-tray-full', 'file-tray-full-outline'),
+          tabBarIcon: icon('hammer', 'hammer-outline'),
         }}
       />
       <Tabs.Screen
-        name="assigned"
+        name="pm"
         options={{
-          title: 'Tugas Saya',
+          title: 'PM',
+          headerTitle: 'Preventive Maintenance',
           href: isExecutor ? undefined : null,
-          tabBarIcon: icon('hammer', 'hammer-outline'),
+          tabBarIcon: icon('calendar', 'calendar-outline'),
+          tabBarBadge: badge(pmCount),
         }}
       />
       <Tabs.Screen

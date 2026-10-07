@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { searchMaterials } from "@/lib/lookups";
 import { queryKeys } from "@/lib/query-keys";
 import type { MaterialOption } from "@/types/lookups";
-import type { WorkOrderMaterial } from "@/types/work-order";
+import type { MaterialInput, WorkOrderMaterial } from "@/types/work-order";
 
 export interface MaterialRow {
   key: string;
@@ -40,6 +40,16 @@ export function emptyMaterialRow(): MaterialRow {
   return { key: newRowKey("m"), material_id: null, material_name: "", quantity: "1", unit: "" };
 }
 
+/** Rows -> API payload (`materials` of WO complete / PUT materials, also used by PM tasks). */
+export function toMaterialInputs(rows: MaterialRow[]): MaterialInput[] {
+  return rows.map((row) => ({
+    material_id: row.material_id,
+    material_name: row.material_name.trim(),
+    quantity: Number(row.quantity),
+    unit: row.unit.trim() || null,
+  }));
+}
+
 /** Client-side validation; returns `index.field -> message`. */
 export function validateMaterialRows(rows: MaterialRow[]): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -60,6 +70,8 @@ interface MaterialsEditorProps {
   disabled?: boolean;
 }
 
+const COLUMNS = "sm:grid-cols-[minmax(0,1fr)_7rem_7rem_2.5rem]";
+
 /** Editable material rows: pick from master (`/materials?q=`) or keep a free-text name. */
 export function MaterialsEditor({ rows, onChange, errorAt, disabled }: MaterialsEditorProps) {
   const patch = (key: string, values: Partial<MaterialRow>) =>
@@ -69,25 +81,27 @@ export function MaterialsEditor({ rows, onChange, errorAt, disabled }: Materials
   return (
     <div className="space-y-3">
       {rows.length === 0 ? (
-        <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
           Tidak ada material. Tambahkan bila ada material/sparepart yang dipakai.
         </p>
       ) : (
         <>
-          <div className="hidden grid-cols-[minmax(0,1fr)_7rem_7rem_2.5rem] gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
+          <div
+            className={`hidden gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:grid ${COLUMNS}`}
+          >
             <span>Material</span>
             <span>Jumlah</span>
             <span>Satuan</span>
             <span className="sr-only">Aksi</span>
           </div>
           {rows.map((row, index) => (
-            <div key={row.key} className="rounded-md border p-3 sm:border-0 sm:p-0">
+            <div key={row.key} className="rounded-lg border p-3 sm:rounded-none sm:border-0 sm:p-0">
               <div className="mb-2 flex items-center justify-between sm:hidden">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">Material {index + 1}</span>
+                <span className="text-xs font-semibold text-muted-foreground">Material {index + 1}</span>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 text-muted-foreground hover:text-destructive"
+                  size="icon"
+                  className="-my-1 h-9 w-9 text-muted-foreground hover:bg-danger-soft hover:text-danger-foreground"
                   onClick={() => remove(row.key)}
                   disabled={disabled}
                   aria-label={`Hapus material ${index + 1}`}
@@ -95,7 +109,7 @@ export function MaterialsEditor({ rows, onChange, errorAt, disabled }: Materials
                   <Trash2 />
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_2.5rem] sm:items-start">
+              <div className={`grid grid-cols-2 gap-2 sm:items-start ${COLUMNS}`}>
                 <div className="col-span-2 space-y-1 sm:col-span-1">
                   <Label htmlFor={`material-name-${row.key}`} className="sr-only">
                     Nama material {index + 1}
@@ -115,7 +129,7 @@ export function MaterialsEditor({ rows, onChange, errorAt, disabled }: Materials
                     fetcher={(q, signal) => searchMaterials(q, signal)}
                     getKey={(item) => item.id}
                     minChars={2}
-                    placeholder="Cari atau ketik nama material"
+                    placeholder="Cari atau ketik nama material…"
                     emptyText="Tidak ada di master; nama yang diketik tetap dipakai."
                     showSearchIcon={false}
                     disabled={disabled}
@@ -145,6 +159,7 @@ export function MaterialsEditor({ rows, onChange, errorAt, disabled }: Materials
                     inputMode="decimal"
                     min={0}
                     step="any"
+                    className="tabular"
                     value={row.quantity}
                     onChange={(event) => patch(row.key, { quantity: event.target.value })}
                     disabled={disabled}
@@ -162,6 +177,7 @@ export function MaterialsEditor({ rows, onChange, errorAt, disabled }: Materials
                     onChange={(event) => patch(row.key, { unit: event.target.value })}
                     placeholder="pcs, m, ltr"
                     maxLength={30}
+                    autoComplete="off"
                     disabled={disabled}
                     invalid={!!errorAt(index, "unit")}
                   />
@@ -170,7 +186,7 @@ export function MaterialsEditor({ rows, onChange, errorAt, disabled }: Materials
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden text-muted-foreground hover:text-destructive sm:inline-flex"
+                  className="hidden text-muted-foreground hover:bg-danger-soft hover:text-danger-foreground sm:inline-flex"
                   onClick={() => remove(row.key)}
                   disabled={disabled}
                   aria-label={`Hapus material ${index + 1}`}

@@ -7,9 +7,9 @@ import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleS
 import { useAuth } from '@/auth/AuthContext';
 import { ActionBar, type BarAction } from '@/components/ActionBar';
 import { ApprovalSteps } from '@/components/request/ApprovalSteps';
-import { ExecutorPicker } from '@/components/request/ExecutorPicker';
 import { RulesBlock } from '@/components/request/RulesBlock';
 import { SuperiorModal } from '@/components/request/SuperiorModal';
+import { StaffRadioList } from '@/components/StaffRadioList';
 import { Timeline } from '@/components/Timeline';
 import { Card, ErrorView, InfoRow, LoadingView, MutedText, PriorityBadge, Section, StatusBadge } from '@/components/ui';
 import { Attachments } from '@/components/workorder/Attachments';
@@ -473,11 +473,13 @@ export default function RequestDetailScreen() {
         }
       >
         {currentStepKey === 'executor_lead' && (
-          <ExecutorPicker
+          <StaffRadioList
             executorUnitId={sr.executor_unit.id}
             value={executorId}
             onChange={setExecutorId}
             enabled={modal === 'approve'}
+            label="Tunjuk pelaksana (opsional)"
+            noneOption={{ title: 'Tidak menunjuk', subtitle: 'Semua staf unit pelaksana dapat menyelesaikan' }}
           />
         )}
       </ReasonModal>

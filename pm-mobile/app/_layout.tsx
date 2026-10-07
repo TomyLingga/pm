@@ -37,7 +37,7 @@ function AuthGate() {
   return null;
 }
 
-/** Opens the WO / Form Request from a tapped notification (foreground, background and cold start). */
+/** Opens the WO / Form Request / PM task from a tapped notification (foreground, background and cold start). */
 function NotificationRouter() {
   const { status } = useAuth();
   const router = useRouter();
@@ -74,6 +74,9 @@ function NotificationRouter() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.workOrders });
       void queryClient.invalidateQueries({ queryKey: queryKeys.requests });
       void queryClient.invalidateQueries({ queryKey: queryKeys.approvals });
+      // pm_task.upcoming / due / overdue / skipped / reassigned → refresh PM lists and the tab badge.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.pmTasks });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.pmSummary });
       const ref = documentRefFromNotification(notification);
       if (ref) void queryClient.invalidateQueries({ queryKey: documentQueryKey(ref) });
     });
@@ -108,6 +111,8 @@ export default function RootLayout() {
             <Stack.Screen name="requests/new" options={{ title: 'Buat Form Request' }} />
             <Stack.Screen name="requests/[id]/index" options={{ title: 'Detail Form Request' }} />
             <Stack.Screen name="requests/[id]/edit" options={{ title: 'Ubah Form Request' }} />
+            <Stack.Screen name="pm-tasks/[id]/index" options={{ title: 'Tugas PM' }} />
+            <Stack.Screen name="equipment/[id]/history" options={{ title: 'Riwayat Alat' }} />
           </Stack>
         </AuthProvider>
       </QueryClientProvider>

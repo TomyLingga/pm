@@ -33,6 +33,7 @@ class NotificationController extends Controller
                 'document_id' => $n->data['document_id'] ?? $workOrderId,
                 'work_order_id' => $workOrderId,
                 'service_request_id' => $requestId,
+                'pm_task_id' => $n->data['pm_task_id'] ?? null,
                 'alarm' => (bool) ($n->data['alarm'] ?? false),
                 'read_at' => $n->read_at?->toIso8601String(),
                 'created_at' => $n->created_at?->toIso8601String(),
@@ -59,6 +60,27 @@ class NotificationController extends Controller
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->noContent();
+    }
+
+    public function preferences(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->preferencePayload($request->user())]);
+    }
+
+    public function updatePreferences(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'boolean']]);
+        $request->user()->forceFill(['email_notifications' => $data['email']])->save();
+
+        return response()->json(['data' => $this->preferencePayload($request->user()->fresh())]);
+    }
+
+    private function preferencePayload($user): array
+    {
+        return [
+            'email' => (bool) ($user->email_notifications ?? true),
+            'email_available' => (bool) config('pm.notifications.mail') && filled($user->email),
+        ];
     }
 
     public function subscribe(Request $request): JsonResponse

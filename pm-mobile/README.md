@@ -1,13 +1,17 @@
-# PM-App INL — Aplikasi Android (Work Order & Form Request)
+# PrevenTech — Aplikasi Android (Work Order, Form Request & Preventive Maintenance)
 
-Aplikasi Android PM-App PT Industri Nabati Lestari:
+Aplikasi Android PrevenTech PT Industri Nabati Lestari:
 
 - **Work Order** (FM-BOPS-10/05) — teknisi di lapangan mengambil/mengerjakan WO, karyawan mengajukan WO.
 - **Form Request** (INLHO/BSIS-ITC/F-004) — permintaan yang memerlukan biaya/persetujuan, dengan rantai
   persetujuan Atasan YBS → Mgr/Spv Divisi → Foreman Divisi, serta tab **Persetujuan** untuk approver.
-- Notifikasi push & alarm (WO prioritas Tinggi, pengingat persetujuan > 24 jam, request ditolak/minta revisi).
+- **Preventive Maintenance** — teknisi mengerjakan tugas PM: checklist (OK / Tidak OK / N/A, angka dengan batas,
+  teks), foto per butir, material, buat WO dari temuan, riwayat maintenance per alat. Pembuatan jadwal, template
+  checklist dan master alat tetap di aplikasi web.
+- Notifikasi push & alarm (WO prioritas Tinggi, tugas PM jatuh tempo/terlambat, pengingat persetujuan > 24 jam,
+  request ditolak/minta revisi).
 
-Kontrak API yang diikuti: `../docs/API_WORK_ORDER.md` dan `../docs/API_SERVICE_REQUEST.md`.
+Kontrak API yang diikuti: `../docs/API_WORK_ORDER.md`, `../docs/API_SERVICE_REQUEST.md` dan `../docs/API_PM.md`.
 
 - Expo **SDK 52** · React Native 0.76 · TypeScript (strict) · expo-router 4 (file-based, tab)
 - Data: @tanstack/react-query v5 · Token disimpan di `expo-secure-store`
@@ -45,9 +49,43 @@ EXPO_PUBLIC_PM_API_URL=https://pm.inl.co.id/api/v1
 | `npx expo-doctor` | Pemeriksaan konfigurasi & versi paket SDK 52 |
 | `npx expo export --platform android --output-dir <folder-temp>` | Membuktikan bundle JS Android dapat dibangun |
 
-## 2. Menjalankan di perangkat Android
+## 2. Menguji di perangkat
 
-### a. Expo Go (paling cepat, untuk UI & alur)
+### Ringkasan
+
+| Cara | Android | iPhone | Push & alarm | Butuh |
+|---|---|---|---|---|
+| **APK lokal** (`npm run build:apk`, hasil di `dist/`) | ya, pasang langsung | tidak | ya (bila `projectId` EAS terisi) | Android SDK + JDK 17 di komputer |
+| **Expo Go** (`npx expo start`, pindai QR) | ya | ya | terbatas | HP dan komputer satu Wi-Fi |
+| **EAS build** (cloud) | APK | IPA ke TestFlight | ya | akun Expo; untuk iOS juga akun Apple Developer |
+
+Backend untuk pengujian: `pm-api` harus bisa dijangkau dari HP. Jalankan dengan
+`php artisan serve --host=0.0.0.0 --port=8000` (bukan hanya `127.0.0.1`), pastikan firewall Windows mengizinkan
+port 8000, dan `EXPO_PUBLIC_PM_API_URL` di `.env` menunjuk ke IP LAN komputer (contoh
+`http://192.168.16.136:8000/api/v1`). Login mobile memakai email/NRK + password Portal INTES.
+
+### APK lokal (Android, tanpa akun Expo)
+
+```bash
+npm run build:apk          # expo prebuild → gradle assembleRelease → dist/PrevenTech-v<versi>.apk
+```
+
+Butuh `ANDROID_HOME` (SDK + build-tools + NDK) dan JDK 17. Build pertama sekitar 10 menit. Salin APK ke HP dan pasang
+(izinkan "Instal dari sumber tidak dikenal"). `EXPO_PUBLIC_PM_API_URL` dibaca dari `.env` saat build, jadi APK ini
+mengarah ke server yang tertulis di sana; untuk produksi ganti ke `https://pm.inl.co.id/api/v1` lalu build ulang.
+Folder `android/` hasil prebuild dan `dist/` tidak masuk git. APK ditandatangani dengan debug keystore (cukup untuk
+pengujian internal; untuk Play Store pakai EAS atau keystore sendiri).
+
+### iPhone
+
+Tidak ada build iOS tanpa Mac atau EAS. Pilihan:
+1. **Expo Go** di iPhone (App Store, versi SDK 52): `npx expo start`, pindai QR dengan kamera. Cukup untuk menguji
+   seluruh alur (login, WO, PM, approval); push tidak tersedia di Expo Go iOS.
+2. **EAS build iOS** (`npx eas-cli@16 build --platform ios --profile preview`): membutuhkan akun Apple Developer
+   (berbayar) dan perangkat terdaftar / TestFlight. Tidak memerlukan Mac karena build berjalan di cloud EAS.
+
+### Android lewat Expo Go
+
 
 1. Pasang **Expo Go** versi yang mendukung **SDK 52** di HP (Expo Go terbaru di Play Store mungkin sudah untuk SDK
    lebih baru — unduh versi SDK 52 dari https://expo.dev/go bila perlu).
@@ -57,7 +95,7 @@ Batasan Expo Go: notifikasi push memerlukan `projectId` EAS (lihat §3) dan salu
 aplikasi Expo Go, sehingga perilaku **alarm** (bunyi di stream alarm, tembus mode Jangan Ganggu) tidak bisa
 diandalkan. Untuk menguji push & alarm gunakan APK (§4).
 
-### b. Development build (opsional)
+### Development build (opsional)
 
 Bila perlu debug native (push, alarm) dengan hot reload:
 
@@ -92,7 +130,7 @@ Selama `projectId` kosong (atau berjalan di emulator), aplikasi **melewati** pen
 
 > `eas-cli` versi terbaru mensyaratkan Node 20+. Dengan Node 18 gunakan `npx eas-cli@16 ...`.
 
-## 4. Build APK dengan EAS
+## 4. Build APK dengan EAS (cloud)
 
 `eas.json` sudah berisi profil `preview` dan `production` (keduanya menghasilkan **APK** untuk distribusi internal,
 dengan `EXPO_PUBLIC_PM_API_URL` produksi):
@@ -105,7 +143,7 @@ Unduh APK dari tautan yang diberikan EAS lalu pasang di HP (izinkan "Instal dari
 Untuk Google Play ubah `buildType` profil `production` menjadi `app-bundle`. Setiap rilis baru, naikkan
 `expo.version` dan `expo.android.versionCode` di `app.json`.
 
-Identitas aplikasi: nama **PM-App INL**, package `id.co.inl.pmapp`, scheme deep link `pmapp://`.
+Identitas aplikasi: nama **PrevenTech**, package `id.co.inl.pmapp`, scheme deep link `pmapp://`.
 
 ## 5. Autentikasi
 
@@ -122,32 +160,34 @@ Saat login dan setiap aplikasi dibuka dengan token tersimpan, aplikasi:
 1. Membuat saluran notifikasi Android:
    | Channel | Untuk | Pengaturan |
    |---|---|---|
-   | `alarm` — "Alarm (WO Tinggi & Persetujuan)" | WO Tinggi baru/ditugaskan, WO ditolak pemohon, `approval.reminder`, `service_request.rejected`, `service_request.revision_requested` | importance **MAX**, getar panjang, `bypassDnd`, tampil di layar kunci (PUBLIC), suara default diputar sebagai **alarm** |
+   | `alarm` — "Alarm (WO Tinggi, PM & Persetujuan)" | WO Tinggi baru/ditugaskan, WO ditolak pemohon, `pm_task.upcoming` / `pm_task.due` / `pm_task.overdue`, `approval.reminder`, `service_request.rejected`, `service_request.revision_requested` | importance **MAX**, getar panjang, `bypassDnd`, tampil di layar kunci (PUBLIC), suara default diputar sebagai **alarm** |
    | `default` — "Notifikasi Umum" | event lain | importance DEFAULT |
 2. Meminta izin notifikasi (Android 13+), mengambil Expo push token, lalu `POST /push-subscriptions
    { channel: "expo", token, device_name }`.
 
 Backend memilih `channelId` = `alarm`/`default` dan mengirim
-`data = { event, document_type, document_id, work_order_id?, service_request_id? }`. Mengetuk notifikasi (aplikasi di
-depan, di belakang, maupun tertutup) — juga item di daftar notifikasi tab Akun — membuka **Detail WO** bila
-`document_type = work_order` atau **Detail Form Request** bila `service_request` (fallback ke `work_order_id` /
-`service_request_id` untuk payload lama). Notifikasi yang masuk saat aplikasi terbuka tetap ditampilkan dan daftar
-WO, Form Request, serta Persetujuan dimuat ulang.
+`data = { event, document_type, document_id, work_order_id?, service_request_id?, pm_task_id? }`. Mengetuk notifikasi
+(aplikasi di depan, di belakang, maupun tertutup) — juga item di daftar notifikasi tab Akun — membuka **Detail WO**
+bila `document_type = work_order`, **Detail Form Request** bila `service_request`, atau **Tugas PM** bila `pm_task`
+(fallback ke `pm_task_id` / `service_request_id` / `work_order_id` bila tipe tidak dikirim). Notifikasi yang masuk
+saat aplikasi terbuka tetap ditampilkan dan daftar WO, Form Request, Persetujuan, serta daftar & badge PM dimuat ulang.
 
 Penting tentang alarm:
 
-- Pengaturan channel Android **tidak bisa diubah** setelah dibuat. Bila konfigurasi channel diubah di kode,
-  pengguna harus menghapus data/instal ulang aplikasi (atau ganti ID channel).
+- Pengaturan channel Android (importance, suara, getar, bypass DND) **tidak bisa diubah** setelah dibuat — hanya
+  nama & deskripsinya yang ikut diperbarui. Bila konfigurasi lain diubah di kode, pengguna harus menghapus
+  data/instal ulang aplikasi (atau ganti ID channel).
 - `bypassDnd` hanya berlaku bila pengguna memberi akses "Jangan Ganggu" — tersedia tombol
   **Akun → "Izinkan alarm berbunyi saat mode Jangan Ganggu"**.
 - Beberapa merek HP (Xiaomi, Oppo, Vivo, dll.) mematikan notifikasi aplikasi yang dihentikan paksa. Minta teknisi
-  mengizinkan *autostart* dan menonaktifkan optimasi baterai untuk PM-App.
+  mengizinkan *autostart* dan menonaktifkan optimasi baterai untuk PrevenTech.
 - Tab **Akun** menampilkan status push dan tombol "Daftar Ulang" bila notifikasi belum aktif.
 
 ## 7. Form Request & Persetujuan
 
-Navigasi tab: **Pool** · **Tugas Saya** (khusus anggota unit pelaksana) · **Pengajuan** (sakelar *Work Order* /
-*Form Request*, `scope=mine`) · **Persetujuan** (selalu tampil) · **Akun**.
+Navigasi tab: **WO** (sakelar *Pool* / *Tugas Saya*) · **PM** — keduanya khusus anggota unit pelaksana ·
+**Pengajuan** (sakelar *Work Order* / *Form Request*, `scope=mine`) · **Persetujuan** (selalu tampil) · **Akun**.
+Pool dan Tugas Saya digabung dalam satu tab agar tab bar tetap lima tab setelah tab PM ditambahkan.
 
 - **Persetujuan** — `GET /approvals/pending` (urut terlama dulu): nomor, jenis dokumen, judul, pemohon, langkah,
   prioritas, menunggu sejak, label merah **"Lewat 24 jam"** bila `overdue`. Badge tab dari
@@ -167,15 +207,49 @@ Navigasi tab: **Pool** · **Tugas Saya** (khusus anggota unit pelaksana) · **Pe
 - **Detail WO** — bila `permissions.can_convert`, tombol **Alihkan ke Form Request** (alasan) →
   `POST /work-orders/{id}/convert-to-request`. Status `converted` dan tautan request hasil/asal pengalihan ditampilkan.
 
-## 8. Struktur
+## 8. Preventive Maintenance (tugas PM)
+
+- **Tab PM** (hanya bila `me.executor_units` tidak kosong) — sakelar **Tugas Saya** (`scope=mine`) / **Unit**
+  (`scope=unit`); chip status *multi-pilih* (Semua, Jatuh Tempo, Terlambat, Dikerjakan, Terjadwal, Selesai, Dilewati)
+  dengan bawaan Jatuh Tempo + Terlambat + Dikerjakan; pencarian alat/jadwal; infinite scroll urut `due_at`.
+  Badge tab = `mine.due + mine.overdue` dari `GET /pm-tasks/summary` (tiap 60 detik & setelah setiap aksi).
+  Kartu: nomor, status (Terjadwal abu-biru, Jatuh Tempo kuning, Dikerjakan biru, Selesai hijau, Terlambat merah,
+  Dilewati abu), alat + lokasi, jadwal + frekuensi, jatuh tempo dengan petunjuk relatif ("2 jam lagi",
+  "lewat 3 jam" = masih dalam toleransi, "terlambat 1 hari"), PIC, penanda usulan lewati & jumlah temuan.
+- **Detail tugas** (`pm-tasks/[id]`) — info alat/jadwal/jatuh tempo/batas toleransi/PIC/estimasi + tautan
+  **Riwayat alat**.
+  - *Belum dimulai*: pratinjau checklist (read-only) + **Mulai Kerjakan** (hanya saat JATUH TEMPO/TERLAMBAT).
+  - *Dikerjakan*: butir dikelompokkan per seksi. `ok_nok_na` → tiga tombol besar **OK / Tidak OK / N/A**;
+    `number` → keypad angka + satuan + petunjuk batas min–max, bingkai hijau (dalam batas) / merah (di luar batas);
+    `text` → isian multi-baris; tombol N/A kecil untuk tipe angka/teks; catatan muncul otomatis saat Tidak OK;
+    tanda `*` untuk butir wajib dan label **Foto wajib**. Foto per butir lewat **kamera** (galeri sebagai pilihan
+    kedua), maks 5 per butir; foto umum tugas maks 10.
+  - **Simpan otomatis**: perubahan dikirim ±0,8 detik setelah berhenti mengetik (`PUT /pm-tasks/{id}/items`, hanya
+    butir yang berubah). Bilah atas menampilkan progres "x/y butir" dan status **Menyimpan… / Tersimpan / Gagal
+    menyimpan** (dicoba ulang otomatis tiap ±6 detik, saat aplikasi ke latar belakang, dan saat keluar layar).
+  - **Buat WO dari temuan**: pada butir Tidak OK → pilih unit (bawaan unit tugas), kategori, prioritas, uraian
+    terisi "Temuan PM {nomor}: {butir} — {catatan}" → `POST /pm-tasks/{id}/items/{itemId}/work-order`; nomor WO
+    lalu tampil sebagai tautan ke detail WO.
+  - **Material** (editor yang sama dengan WO, tombol *Simpan Material*) dan **Selesaikan** (durasi menit terisi dari
+    waktu mulai → sekarang, catatan). Error `422` berkunci `items.{id}` ditandai pada butirnya dan layar menggulir ke
+    butir pertama yang bermasalah.
+  - Aksi lain sesuai `permissions`: **Usulkan Lewati** (alasan), spanduk usulan lewati, **Lewati** (pimpinan; alasan
+    terisi dari usulan), **Ganti PIC** (pimpinan; daftar staf unit).
+  - *Selesai / Dilewati*: hasil read-only, temuan disorot merah dengan tautan WO, foto, material, riwayat.
+- **Riwayat alat** (`equipment/[id]/history`) — kartu alat (`GET /equipment/{id}`: lokasi, unit, merek/model,
+  WO terbuka, jadwal aktif, PM berikutnya/terakhir) + daftar `GET /equipment/{id}/history` (ikon jenis PM/WO,
+  nomor, tanggal, status, judul, pelaku, jumlah temuan, penanda terlambat); ketuk → detail tugas PM / WO.
+- **Detail WO** menampilkan "Dari temuan PM-… — …" (`source_pm_task`) yang membuka tugas PM asal.
+
+## 9. Struktur
 
 ```
 app/
   _layout.tsx              Provider (React Query, Auth), gerbang login, routing tap notifikasi
-  index.tsx                Redirect awal (Pool untuk staf pelaksana, Pengajuan untuk lainnya)
+  index.tsx                Redirect awal (tab WO untuk staf pelaksana, Pengajuan untuk lainnya)
   (auth)/login.tsx, totp.tsx
-  (tabs)/pool.tsx          scope=pool   (hanya untuk anggota unit pelaksana)
-  (tabs)/assigned.tsx      scope=assigned ("Tugas Saya", hanya untuk anggota unit pelaksana)
+  (tabs)/work.tsx          "WO": sakelar Pool (scope=pool) / Tugas Saya (scope=assigned) — staf pelaksana
+  (tabs)/pm.tsx            "PM": tugas PM saya / unit — staf pelaksana
   (tabs)/mine.tsx          "Pengajuan": sakelar WO / Form Request (scope=mine)
   (tabs)/approvals.tsx     "Persetujuan": /approvals/pending
   (tabs)/account.tsx       profil, status push, daftar notifikasi, keluar
@@ -184,15 +258,21 @@ app/
   work-orders/[id]/complete.tsx  pekerjaan selesai, material, pekerja, clearance (Simpan Draf / Selesai)
   requests/new.tsx, requests/[id]/edit.tsx   form Form Request (Simpan Draf / Simpan & Ajukan)
   requests/[id]/index.tsx  detail Form Request + PENGESAHAN + action bar berbasis `permissions`
+  pm-tasks/[id]/index.tsx  detail tugas PM + pengisian checklist (simpan otomatis)
+  equipment/[id]/history.tsx  riwayat maintenance per alat (PM + WO)
 src/
   auth/AuthContext.tsx     sesi, login/TOTP/logout
   lib/api.ts               klien HTTP (ApiError, 401 handler) · endpoints.ts (semua endpoint bertipe)
   lib/push.ts              channel, izin, token, (un)subscribe · download.ts (PDF/lampiran → share)
   lib/photos.ts            kamera/galeri/PDF & unggah lampiran · format.ts (tanggal WIB, durasi, Rupiah)
-  lib/documents.ts         routing notifikasi/approval → WO atau Form Request
-  components/              UI (tombol besar, chip, modal), PagedList, ActionBar, Timeline, kartu & daftar
-  components/request/      RequestForm, ApprovalSteps (PENGESAHAN), SuperiorModal, ExecutorPicker, RulesBlock
-  components/workorder/    modal aksi WO, lampiran
+  lib/documents.ts         routing notifikasi/approval → WO, Form Request atau tugas PM
+  lib/pm.ts                aturan checklist (penilaian angka, kelengkapan, payload simpan), petunjuk jatuh tempo
+  hooks/useChecklistAutosave.ts   draf butir + simpan otomatis ter-debounce · usePmTask.ts
+  components/              UI (tombol besar, chip, modal), PagedList, ActionBar, Timeline, MaterialsEditor,
+                           StaffRadioList, kartu & daftar
+  components/request/      RequestForm, ApprovalSteps (PENGESAHAN), SuperiorModal, RulesBlock
+  components/workorder/    modal aksi WO, lampiran (AttachmentGrid dengan header Authorization)
+  components/pm/           PmTaskCard/List, ChecklistItemCard, ChecklistReadOnly, FindingWorkOrderModal, TaskModals
 ```
 
 Tombol aksi di detail WO hanya muncul sesuai `permissions` dari server (`can_pick`, `can_receive`, `can_reassign`,

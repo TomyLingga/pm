@@ -8,6 +8,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
+  // Lets `next build` write somewhere else (e.g. NEXT_DIST_DIR=.next-build) while `next dev`
+  // is using the default `.next` directory; both commands on one dist dir corrupt each other.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   async rewrites() {
     return [
       {

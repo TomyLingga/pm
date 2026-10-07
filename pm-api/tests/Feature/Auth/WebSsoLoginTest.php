@@ -73,7 +73,7 @@ class WebSsoLoginTest extends TestCase
 
         $this->postJson('/api/v1/auth/sso', ['token' => 'expired'], $this->spaHeaders)
             ->assertUnauthorized()
-            ->assertJsonFragment(['message' => 'Token SSO tidak valid atau sudah kedaluwarsa. Buka kembali PM-App dari Portal INTES.']);
+            ->assertJsonFragment(['message' => 'Token SSO tidak valid atau sudah kedaluwarsa. Buka kembali PrevenTech dari Portal INTES.']);
         $this->assertGuest('web');
         $this->assertSame(0, User::query()->count());
     }

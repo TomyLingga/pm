@@ -1,6 +1,7 @@
 import type { ApiEnvelope, Paginated } from "@/types/api";
+import type { NotificationPreferences } from "@/types/dashboard";
 import type { AppNotification } from "@/types/notification";
-import { api } from "./api";
+import { api, unwrap } from "./api";
 
 export function getNotifications(
   params: { page?: number; unread?: boolean } = {},
@@ -24,4 +25,14 @@ export function markNotificationRead(id: AppNotification["id"]): Promise<void> {
 
 export function markAllNotificationsRead(): Promise<void> {
   return api.post<void>("/notifications/read-all");
+}
+
+/* ---------- Preferences ---------- */
+
+export function getNotificationPreferences(signal?: AbortSignal): Promise<NotificationPreferences> {
+  return unwrap(api.get<ApiEnvelope<NotificationPreferences>>("/notifications/preferences", undefined, { signal }));
+}
+
+export function updateNotificationPreferences(email: boolean): Promise<NotificationPreferences> {
+  return unwrap(api.put<ApiEnvelope<NotificationPreferences>>("/notifications/preferences", { email }));
 }

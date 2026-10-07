@@ -15,6 +15,10 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         \App\Models\WorkOrder::class => \App\Policies\WorkOrderPolicy::class,
         \App\Models\ServiceRequest::class => \App\Policies\ServiceRequestPolicy::class,
+        \App\Models\ChecklistTemplate::class => \App\Policies\PmPolicy::class,
+        \App\Models\PmSchedule::class => \App\Policies\PmPolicy::class,
+        \App\Models\PmTask::class => \App\Policies\PmPolicy::class,
+        \App\Models\Equipment::class => \App\Policies\PmPolicy::class,
     ];
 
     /**

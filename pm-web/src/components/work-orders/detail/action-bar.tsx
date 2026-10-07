@@ -1,26 +1,14 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowRightLeft,
-  CheckCircle2,
-  ClipboardCheck,
-  Hand,
-  Pencil,
-  Play,
-  Printer,
-  UserCheck,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, ClipboardCheck, Hand, Play, UserCheck, Users, XCircle } from "lucide-react";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { ReasonDialog } from "@/components/common/reason-dialog";
 import { Button } from "@/components/ui/button";
 import { queryKeys } from "@/lib/query-keys";
-import { convertWorkOrderToRequest, pickWorkOrder, startWorkOrder, workOrderPdfUrl } from "@/lib/work-orders";
+import { convertWorkOrderToRequest, pickWorkOrder, startWorkOrder } from "@/lib/work-orders";
 import type { WorkOrderDetail } from "@/types/work-order";
 import { AcceptDialog } from "./accept-dialog";
 import { AssignDialog } from "./assign-dialog";
@@ -35,7 +23,10 @@ interface ActionBarProps {
   onOpenComplete: () => void;
 }
 
-/** Buttons are driven exclusively by `wo.permissions`. */
+/**
+ * Workflow actions, driven exclusively by `wo.permissions`. Document actions (edit, PDF) sit in the
+ * page header. The bar is hidden entirely when the user has no workflow action.
+ */
 export function ActionBar({ wo, completeOpen, onOpenComplete }: ActionBarProps) {
   const p = wo.permissions;
   const router = useRouter();
@@ -63,74 +54,77 @@ export function ActionBar({ wo, completeOpen, onOpenComplete }: ActionBarProps) 
   });
 
   const canFinish = p.can_work || p.can_complete;
+  const showFinish = canFinish && !completeOpen;
+  const hasActions =
+    p.can_pick ||
+    p.can_receive ||
+    p.can_start ||
+    showFinish ||
+    p.can_accept ||
+    p.can_reassign ||
+    p.can_convert ||
+    p.can_cancel;
 
   return (
-    <div className="flex flex-wrap gap-2 rounded-lg border bg-card p-3 shadow-sm">
-      {p.can_pick ? (
-        <Button onClick={() => setDialog("pick")}>
-          <Hand />
-          Ambil WO
-        </Button>
-      ) : null}
-      {p.can_receive ? (
-        <Button onClick={() => setDialog("receive")}>
-          <UserCheck />
-          Terima &amp; Tugaskan
-        </Button>
-      ) : null}
-      {p.can_start ? (
-        <Button onClick={() => setDialog("start")}>
-          <Play />
-          Mulai Kerjakan
-        </Button>
-      ) : null}
-      {canFinish && !completeOpen ? (
-        <Button onClick={onOpenComplete}>
-          <ClipboardCheck />
-          Selesaikan Pekerjaan
-        </Button>
-      ) : null}
-      {p.can_accept ? (
-        <Button onClick={() => setDialog("accept")}>
-          <CheckCircle2 />
-          Konfirmasi Penerimaan
-        </Button>
-      ) : null}
-      {p.can_reassign ? (
-        <Button variant="outline" onClick={() => setDialog("reassign")}>
-          <Users />
-          Ubah Teknisi
-        </Button>
-      ) : null}
-      {p.can_update ? (
-        <Button asChild variant="outline">
-          <Link href={`/work-orders/${wo.id}/edit`}>
-            <Pencil />
-            Ubah
-          </Link>
-        </Button>
-      ) : null}
-      <Button asChild variant="outline">
-        <a href={workOrderPdfUrl(wo.id)} target="_blank" rel="noopener noreferrer">
-          <Printer />
-          Cetak PDF
-        </a>
-      </Button>
-      {p.can_convert ? (
-        <Button variant="outline" onClick={() => setDialog("convert")}>
-          <ArrowRightLeft />
-          Alihkan ke Form Request
-        </Button>
-      ) : null}
-      {p.can_cancel ? (
-        <Button
-          variant="outline"
-          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive sm:ml-auto"
-          onClick={() => setDialog("cancel")}
-        >
-          <XCircle />
-          Batalkan WO
-        </Button>
+    <>
+      {hasActions ? (
+        <div className="panel p-3" aria-label="Tindakan Work Order" role="group">
+          {/* On phones every button stretches to fill its row (>= 40px tap targets); desktop keeps natural widths. */}
+          <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
+            {p.can_pick ? (
+              <Button onClick={() => setDialog("pick")}>
+                <Hand />
+                Ambil WO
+              </Button>
+            ) : null}
+            {p.can_receive ? (
+              <Button onClick={() => setDialog("receive")}>
+                <UserCheck />
+                Terima &amp; Tugaskan
+              </Button>
+            ) : null}
+            {p.can_start ? (
+              <Button onClick={() => setDialog("start")}>
+                <Play />
+                Mulai Kerjakan
+              </Button>
+            ) : null}
+            {showFinish ? (
+              <Button onClick={onOpenComplete}>
+                <ClipboardCheck />
+                Selesaikan Pekerjaan
+              </Button>
+            ) : null}
+            {p.can_accept ? (
+              <Button onClick={() => setDialog("accept")}>
+                <CheckCircle2 />
+                Konfirmasi Penerimaan
+              </Button>
+            ) : null}
+            {p.can_reassign ? (
+              <Button variant="outline" onClick={() => setDialog("reassign")}>
+                <Users />
+                Ubah Teknisi
+              </Button>
+            ) : null}
+            {p.can_convert ? (
+              <Button variant="outline" onClick={() => setDialog("convert")}>
+                <ArrowRightLeft />
+                Alihkan ke Form Request
+              </Button>
+            ) : null}
+            {p.can_cancel ? (
+              <Button
+                variant="outline"
+                className="border-danger/40 text-danger-foreground hover:bg-danger-soft hover:text-danger-foreground sm:ml-auto"
+                onClick={() => setDialog("cancel")}
+              >
+                <XCircle />
+                Batalkan WO
+              </Button>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       <ConfirmDialog
@@ -179,6 +173,6 @@ export function ActionBar({ wo, completeOpen, onOpenComplete }: ActionBarProps) 
         error={convert.error}
         onSubmit={(reason) => convert.mutate(reason)}
       />
-    </div>
+    </>
   );
 }

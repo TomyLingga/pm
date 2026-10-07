@@ -49,6 +49,9 @@ type DialogKey =
   | "delete"
   | null;
 
+/** Outline button with a destructive tint (reject / cancel). */
+const dangerOutline = "border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive";
+
 /** Buttons are driven exclusively by `request.permissions`. */
 export function RequestActionBar({ request }: { request: ServiceRequestDetail }) {
   const p = request.permissions;
@@ -107,83 +110,77 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
     }
   };
 
+  const hasDanger = p.can_cancel || p.can_delete;
+
   return (
-    <div className="flex flex-wrap gap-2 rounded-lg border bg-card p-3 shadow-sm">
+    <div className="panel flex flex-wrap gap-2 p-3" role="group" aria-label="Tindakan Form Request">
       {p.can_submit ? (
         <Button onClick={() => setDialog("submit")}>
-          <Send />
+          <Send aria-hidden />
           Ajukan
         </Button>
       ) : null}
       {p.can_approve ? (
         <Button onClick={() => setDialog("approve")}>
-          <CheckCircle2 />
+          <CheckCircle2 aria-hidden />
           Setujui
         </Button>
       ) : null}
       {p.can_complete ? (
         <Button onClick={() => setDialog("complete")}>
-          <ClipboardCheck />
+          <ClipboardCheck aria-hidden />
           Selesaikan
         </Button>
       ) : null}
       {p.can_request_revision ? (
         <Button variant="outline" onClick={() => setDialog("revision")}>
-          <RotateCcw />
+          <RotateCcw aria-hidden />
           Minta Revisi
         </Button>
       ) : null}
       {p.can_reject ? (
-        <Button
-          variant="outline"
-          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => setDialog("reject")}
-        >
-          <XOctagon />
+        <Button variant="outline" className={dangerOutline} onClick={() => setDialog("reject")}>
+          <XOctagon aria-hidden />
           Tolak
         </Button>
       ) : null}
       {p.can_convert ? (
         <Button variant="outline" onClick={() => setDialog("convert")}>
-          <ArrowRightLeft />
+          <ArrowRightLeft aria-hidden />
           Alihkan ke WO
         </Button>
       ) : null}
       {p.can_change_superior ? (
         <Button variant="outline" onClick={() => setDialog("change_superior")}>
-          <UserRoundCog />
+          <UserRoundCog aria-hidden />
           Ganti Atasan
         </Button>
       ) : null}
       {p.can_update ? (
         <Button asChild variant="outline">
           <Link href={`/requests/${request.id}/edit`}>
-            <Pencil />
+            <Pencil aria-hidden />
             Ubah
           </Link>
         </Button>
       ) : null}
       <Button asChild variant="outline">
         <a href={serviceRequestPdfUrl(request.id)} target="_blank" rel="noopener noreferrer">
-          <Printer />
+          <Printer aria-hidden />
           Cetak PDF
         </a>
       </Button>
-      {p.can_cancel || p.can_delete ? (
+      {hasDanger ? (
         <div className="flex flex-wrap gap-2 sm:ml-auto">
           {p.can_cancel ? (
-            <Button
-              variant="outline"
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setDialog("cancel")}
-            >
-              <XCircle />
+            <Button variant="outline" className={dangerOutline} onClick={() => setDialog("cancel")}>
+              <XCircle aria-hidden />
               Batalkan
             </Button>
           ) : null}
           {p.can_delete ? (
             <Button variant="destructive" onClick={() => setDialog("delete")}>
-              <Trash2 />
+              <Trash2 aria-hidden />
               Hapus
             </Button>
           ) : null}
@@ -202,11 +199,12 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         open={dialog === "reject"}
         onOpenChange={onOpenChange}
         title="Tolak Form Request?"
-        description="Form Request yang ditolak berstatus final dan tidak dapat diproses lagi."
+        description="Form Request yang ditolak berstatus final dan tidak dapat diproses lagi. Alasan ditampilkan kepada pemohon."
         label="Alasan penolakan"
+        placeholder="Contoh: anggaran tidak tersedia tahun ini"
         required
         fieldKey="notes"
-        confirmLabel="Tolak"
+        confirmLabel="Tolak Form Request"
         confirmVariant="destructive"
         loading={reject.isPending}
         error={reject.error}
@@ -221,7 +219,7 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         placeholder="Apa yang perlu diperbaiki pemohon?"
         required
         fieldKey="notes"
-        confirmLabel="Minta Revisi"
+        confirmLabel="Kirim Permintaan Revisi"
         loading={revision.isPending}
         error={revision.error}
         onSubmit={(text) => revision.mutate(text)}
@@ -235,7 +233,7 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         placeholder="Contoh: laptop sudah diserahkan, akses sudah dibuat"
         required
         fieldKey="executor_notes"
-        confirmLabel="Selesaikan"
+        confirmLabel="Tandai Selesai"
         loading={complete.isPending}
         error={complete.error}
         onSubmit={(text) => complete.mutate(text)}
@@ -246,9 +244,10 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         title="Batalkan Form Request?"
         description="Form Request yang dibatalkan tidak dapat diproses lagi."
         label="Alasan pembatalan"
+        placeholder="Contoh: kebutuhan sudah tidak relevan"
         required
         fieldKey="reason"
-        confirmLabel="Batalkan"
+        confirmLabel="Batalkan Form Request"
         confirmVariant="destructive"
         loading={cancel.isPending}
         error={cancel.error}
@@ -263,7 +262,7 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         placeholder="Contoh: tidak memerlukan biaya, cukup ditangani lewat WO"
         required
         fieldKey="reason"
-        confirmLabel="Alihkan"
+        confirmLabel="Alihkan ke WO"
         loading={convert.isPending}
         error={convert.error}
         onSubmit={(text) => convert.mutate(text)}
@@ -272,8 +271,8 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         open={dialog === "delete"}
         onOpenChange={onOpenChange}
         title="Hapus draf Form Request?"
-        description="Draf beserta lampirannya akan dihapus permanen."
-        confirmLabel="Hapus"
+        description="Draf beserta lampirannya akan dihapus permanen dan tidak dapat dikembalikan."
+        confirmLabel="Hapus Draf"
         confirmVariant="destructive"
         loading={deleting}
         onConfirm={() => void onDelete()}

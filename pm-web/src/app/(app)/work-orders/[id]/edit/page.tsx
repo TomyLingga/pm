@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/common/page-header";
-import { EmptyState, LoadingState } from "@/components/common/states";
+import { EmptyState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { useWorkOrder } from "@/components/work-orders/use-work-order";
-import { WorkOrderForm } from "@/components/work-orders/work-order-form";
+import { WorkOrderForm, WorkOrderFormSkeleton } from "@/components/work-orders/work-order-form";
 import { WorkOrderLoadError } from "@/components/work-orders/work-order-load-error";
 import { parseId } from "@/lib/utils";
 
@@ -20,15 +20,16 @@ export default function EditWorkOrderPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
-        title={query.data ? `Ubah ${query.data.wo_number}` : "Ubah Work Order"}
+        eyebrow={query.data ? <span className="font-mono">{query.data.wo_number}</span> : "Work Order"}
+        title="Ubah Work Order"
         description="Perubahan hanya dapat dilakukan selama WO masih berstatus DIAJUKAN."
         backHref={`/work-orders/${id}`}
         backLabel="Detail WO"
       />
       {query.isPending ? (
-        <LoadingState />
+        <WorkOrderFormSkeleton />
       ) : query.isError ? (
         <WorkOrderLoadError error={query.error} onRetry={() => query.refetch()} />
       ) : !query.data.permissions.can_update ? (

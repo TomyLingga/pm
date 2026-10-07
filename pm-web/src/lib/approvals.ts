@@ -17,5 +17,6 @@ export function documentHref(type: string | null | undefined, id: number | null 
   if (!id) return null;
   if (type === "service_request") return `/requests/${id}`;
   if (type === "work_order") return `/work-orders/${id}`;
+  if (type === "pm_task") return `/pm/tasks/${id}`;
   return null;
 }

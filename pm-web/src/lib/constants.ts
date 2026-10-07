@@ -59,6 +59,16 @@ export const SCOPE_LABELS: Record<WorkOrderScope, string> = {
   all: "Semua",
 };
 
+/** What each WO tab contains (shown under the tabs). */
+export const SCOPE_DESCRIPTIONS: Record<WorkOrderScope, string> = {
+  mine: "Work Order yang Anda ajukan sendiri, ke unit pelaksana mana pun.",
+  unit: "Work Order yang diajukan rekan satu unit organisasi Anda (hanya lihat).",
+  pool: "WO baru ke unit pelaksana Anda yang belum diambil teknisi atau ditugaskan pimpinan.",
+  assigned: "WO yang ditugaskan kepada Anda atau Anda ambil sendiri, dari diterima sampai closed.",
+  executor: "Semua WO yang masuk ke unit pelaksana Anda, apa pun status dan teknisinya.",
+  all: "Seluruh WO di semua unit (khusus admin). Gunakan filter unit pelaksana untuk mempersempit.",
+};
+
 export const ATTACHMENT_COLLECTION_LABELS: Record<AttachmentCollection, string> = {
   photo_before: "Foto Sebelum",
   photo_after: "Foto Sesudah",
@@ -74,7 +84,7 @@ export const ATTACHMENT_MIME_TYPES = [...PHOTO_MIME_TYPES, "application/pdf"];
 
 export const SR_STATUS_OPTIONS: Array<{ value: ServiceRequestStatus; label: string }> = [
   { value: "draft", label: "DRAFT" },
-  { value: "waiting_superior", label: "MENUNGGU_ATASAN" },
+  { value: "waiting_superior", label: "MENUNGGU ATASAN" },
   { value: "waiting_executor", label: "MENUNGGU_DIVISI" },
   { value: "in_progress", label: "DIPROSES" },
   { value: "completed", label: "SELESAI" },
@@ -95,10 +105,18 @@ export const SR_PRIORITY_OPTIONS: Array<{ value: ServiceRequestPriority; label: 
 ];
 
 export const SR_SCOPE_LABELS: Record<ServiceRequestScope, string> = {
-  mine: "Saya",
+  mine: "Request Saya",
   unit: "Unit Saya",
   executor: "Unit Pelaksana",
   all: "Semua",
+};
+
+/** What each Form Request tab contains (shown under the tabs). */
+export const SR_SCOPE_DESCRIPTIONS: Record<ServiceRequestScope, string> = {
+  mine: "Form Request yang Anda buat, termasuk draft yang belum diajukan.",
+  unit: "Form Request yang diajukan rekan satu unit organisasi Anda (hanya lihat).",
+  executor: "Form Request yang ditujukan ke unit pelaksana Anda dan sudah diajukan pemohon.",
+  all: "Seluruh Form Request di semua unit (khusus admin). Gunakan filter unit pelaksana untuk mempersempit.",
 };
 
 /** Row labels of the PENGESAHAN block (form INLHO/BSIS-ITC/F-004). */

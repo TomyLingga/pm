@@ -33,6 +33,8 @@ class WorkOrderResource extends WorkOrderListResource
         'statusLogs.user',
         'sourceServiceRequest',
         'convertedServiceRequest',
+        'pmTask',
+        'pmTaskItem',
     ];
 
     public const ACTION_LABELS = [
@@ -89,6 +91,11 @@ class WorkOrderResource extends WorkOrderListResource
             'cancel_reason' => $this->cancel_reason,
             'cancelled_at' => $this->cancelled_at?->toIso8601String(),
             'sla_minutes' => $this->slaMinutes(),
+            'source_pm_task' => $this->pmTask ? [
+                'id' => $this->pmTask->id,
+                'number' => $this->pmTask->number,
+                'item_description' => $this->pmTaskItem?->description,
+            ] : null,
             'conversion_reason' => $this->conversion_reason,
             'converted_at' => $this->converted_at?->toIso8601String(),
             'source_service_request' => $this->sourceServiceRequest

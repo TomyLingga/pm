@@ -1,2 +1,5 @@
 # Design documents are kept outside version control.
 /docs/
+
+# Production secrets (see .env.prod.example)
+.env.prod

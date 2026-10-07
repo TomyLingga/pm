@@ -1,0 +1,150 @@
+# PM-App PT INL — production stack for the CentOS host (Docker Engine + Compose v2).
+#
+#   cp .env.prod.example .env.prod   # fill in secrets
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#
+# Containers: pm-nginx (edge, TLS) · pm-web (Next.js) · pm-api (php-fpm) · pm-worker (queue) ·
+# pm-scheduler (schedule:work) · pm-db (PostgreSQL 17) · pm-redis · pm-backup (daily pg_dump).
+# See docs/DEPLOY.md for the step-by-step guide.
+
+x-api-base: &api-base
+  image: pm-api:${PM_VERSION:-latest}
+  build:
+    context: .
+    dockerfile: docker/pm-api/Dockerfile
+  env_file: .env.prod
+  environment:
+    DB_HOST: pm-db
+    REDIS_HOST: pm-redis
+  volumes:
+    - pm-storage:/var/www/html/storage/app
+    - pm-logs:/var/www/html/storage/logs
+  depends_on:
+    pm-db:
+      condition: service_healthy
+    pm-redis:
+      condition: service_healthy
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  pm-nginx:
+    image: pm-nginx:${PM_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+      args:
+        PM_API_IMAGE: pm-api:${PM_VERSION:-latest}
+    environment:
+      PM_DOMAIN: ${PM_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${PM_CERT_DIR}:/etc/nginx/certs:ro
+      - pm-certbot:/var/www/certbot
+      - pm-storage:/var/www/html/storage/app:ro
+    depends_on:
+      - pm-api
+      - pm-web
+    restart: unless-stopped
+
+  pm-web:
+    image: pm-web:${PM_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: docker/pm-web/Dockerfile
+      args:
+        NEXT_PUBLIC_PORTAL_APP_ID: ${PORTAL_APP_ID}
+        NEXT_PUBLIC_PORTAL_LAUNCH_URL: ${PORTAL_WEB_URL}/launch?app_id=${PORTAL_APP_ID}
+        NEXT_PUBLIC_PORTAL_HOME_URL: ${PORTAL_WEB_URL}
+    expose: ["3000"]
+    restart: unless-stopped
+
+  pm-api:
+    <<: *api-base
+    command: ["php-fpm"]
+    expose: ["9000"]
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  pm-worker:
+    <<: *api-base
+    command: ["php", "artisan", "queue:work", "redis", "--queue=default", "--sleep=3", "--tries=3", "--max-time=3600", "--memory=256"]
+    environment:
+      DB_HOST: pm-db
+      REDIS_HOST: pm-redis
+      PM_SKIP_MIGRATE: "1"
+    depends_on:
+      pm-api:
+        condition: service_healthy
+
+  pm-scheduler:
+    <<: *api-base
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      DB_HOST: pm-db
+      REDIS_HOST: pm-redis
+      PM_SKIP_MIGRATE: "1"
+    depends_on:
+      pm-api:
+        condition: service_healthy
+
+  pm-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Jakarta
+    volumes:
+      - pm-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  pm-redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - pm-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  pm-backup:
+    image: pm-backup:${PM_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: docker/backup/Dockerfile
+    environment:
+      PGHOST: pm-db
+      PGDATABASE: ${DB_DATABASE}
+      PGUSER: ${DB_USERNAME}
+      PGPASSWORD: ${DB_PASSWORD}
+      BACKUP_CRON: ${BACKUP_CRON:-15 1 * * *}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ${PM_BACKUP_DIR}:/backups
+    depends_on:
+      pm-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pm-db-data:
+  pm-redis-data:
+  pm-storage:
+  pm-logs:
+  pm-certbot:

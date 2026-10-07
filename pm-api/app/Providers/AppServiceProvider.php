@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\PmTask;
+use App\Models\PmTaskItem;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Models\WorkOrder;
@@ -23,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             WorkOrder::MORPH_ALIAS => WorkOrder::class,
             ServiceRequest::MORPH_ALIAS => ServiceRequest::class,
+            PmTask::MORPH_ALIAS => PmTask::class,
+            PmTaskItem::MORPH_ALIAS => PmTaskItem::class,
         ]);
 
         Carbon::setLocale(config('app.locale'));

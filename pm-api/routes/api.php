@@ -3,7 +3,14 @@
 use App\Http\Controllers\Api\V1\ApprovalController;
 use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ChecklistTemplateController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\ServiceCategoryController;
+use App\Http\Controllers\Api\V1\UserAccessController;
+use App\Http\Controllers\Api\V1\EquipmentController;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\PmScheduleController;
+use App\Http\Controllers\Api\V1\PmTaskController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PublicSignatureController;
 use App\Http\Controllers\Api\V1\ServiceRequestActionController;
@@ -30,8 +37,51 @@ Route::prefix('v1')->group(function () {
         // Lookups for forms
         Route::get('executor-units', [LookupController::class, 'executorUnits']);
         Route::get('executor-units/{executorUnit}/staff', [LookupController::class, 'staff']);
+        Route::get('service-categories/sections', [ServiceCategoryController::class, 'sections']);
+        Route::post('service-categories', [ServiceCategoryController::class, 'store']);
+        Route::put('service-categories/{serviceCategory}', [ServiceCategoryController::class, 'update']);
         Route::get('locations', [LookupController::class, 'locations']);
-        Route::get('equipment', [LookupController::class, 'equipment']);
+        Route::post('locations', [LookupController::class, 'storeLocation']);
+
+        // Equipment master + maintenance history
+        Route::get('equipment', [EquipmentController::class, 'index']);
+        Route::post('equipment', [EquipmentController::class, 'store']);
+        Route::get('equipment/{equipment}', [EquipmentController::class, 'show']);
+        Route::put('equipment/{equipment}', [EquipmentController::class, 'update']);
+        Route::delete('equipment/{equipment}', [EquipmentController::class, 'destroy']);
+        Route::get('equipment/{equipment}/history', [EquipmentController::class, 'history']);
+
+        // Preventive Maintenance (Module C)
+        Route::get('checklist-templates', [ChecklistTemplateController::class, 'index']);
+        Route::post('checklist-templates', [ChecklistTemplateController::class, 'store']);
+        Route::get('checklist-templates/{checklistTemplate}', [ChecklistTemplateController::class, 'show']);
+        Route::put('checklist-templates/{checklistTemplate}', [ChecklistTemplateController::class, 'update']);
+        Route::delete('checklist-templates/{checklistTemplate}', [ChecklistTemplateController::class, 'destroy']);
+        Route::post('checklist-templates/{checklistTemplate}/duplicate', [ChecklistTemplateController::class, 'duplicate']);
+
+        Route::post('pm-schedules/preview', [PmScheduleController::class, 'preview']);
+        Route::get('pm-schedules', [PmScheduleController::class, 'index']);
+        Route::post('pm-schedules', [PmScheduleController::class, 'store']);
+        Route::get('pm-schedules/{pmSchedule}', [PmScheduleController::class, 'show']);
+        Route::put('pm-schedules/{pmSchedule}', [PmScheduleController::class, 'update']);
+        Route::delete('pm-schedules/{pmSchedule}', [PmScheduleController::class, 'destroy']);
+
+        Route::get('pm-tasks/summary', [PmTaskController::class, 'summary']);
+        Route::get('pm-tasks/calendar', [PmTaskController::class, 'calendar']);
+        Route::get('pm-tasks/export', [PmTaskController::class, 'export']);
+        Route::get('pm-tasks', [PmTaskController::class, 'index']);
+        Route::get('pm-tasks/{pmTask}', [PmTaskController::class, 'show']);
+        Route::name('pm-tasks.')->prefix('pm-tasks/{pmTask}')->group(function () {
+            Route::post('start', [PmTaskController::class, 'start'])->name('start');
+            Route::put('items', [PmTaskController::class, 'items'])->name('items');
+            Route::put('materials', [PmTaskController::class, 'materials'])->name('materials');
+            Route::post('complete', [PmTaskController::class, 'complete'])->name('complete');
+            Route::post('propose-skip', [PmTaskController::class, 'proposeSkip'])->name('propose-skip');
+            Route::post('skip', [PmTaskController::class, 'skip'])->name('skip');
+            Route::post('reassign', [PmTaskController::class, 'reassign'])->name('reassign');
+            Route::post('attachments', [PmTaskController::class, 'attach'])->name('attachments');
+            Route::post('items/{item}/work-order', [PmTaskController::class, 'findingWorkOrder'])->name('finding-work-order');
+        });
         Route::get('materials', [LookupController::class, 'materials']);
 
         // Work orders
@@ -56,6 +106,8 @@ Route::prefix('v1')->group(function () {
 
         // Form Request (Module B)
         Route::get('offices', [LookupController::class, 'offices']);
+        Route::get('users', [UserAccessController::class, 'index']);
+        Route::put('users/{user}/access', [UserAccessController::class, 'update']);
         Route::get('users/superior-candidates', [LookupController::class, 'superiorCandidates']);
         Route::get('users/my-superior', [LookupController::class, 'mySuperior']);
         Route::put('executor-units/{executorUnit}/request-settings', [LookupController::class, 'updateRequestSettings']);
@@ -90,6 +142,10 @@ Route::prefix('v1')->group(function () {
         // Notifications & push
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::get('notifications/preferences', [NotificationController::class, 'preferences']);
+        Route::put('notifications/preferences', [NotificationController::class, 'updatePreferences']);
+        Route::get('dashboard', [DashboardController::class, 'show']);
+        Route::get('dashboard/live', [DashboardController::class, 'live']);
         Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
         Route::post('notifications/{id}/read', [NotificationController::class, 'read']);
         Route::post('push-subscriptions', [NotificationController::class, 'subscribe']);

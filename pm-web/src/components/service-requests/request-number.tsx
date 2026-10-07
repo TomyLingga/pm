@@ -1,18 +1,14 @@
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 /** Request number, or a "DRAFT" chip while it has never been submitted. */
 export function RequestNumber({ number, className }: { number: string | null; className?: string }) {
   if (!number) {
     return (
-      <span
-        className={cn(
-          "inline-flex rounded border border-dashed border-slate-400 px-1.5 py-0.5 font-mono text-xs font-bold text-slate-600",
-          className,
-        )}
-      >
+      <Badge variant="dashed" className={cn("rounded-md px-1.5 py-0 font-mono text-[11px] font-bold", className)}>
         DRAFT
-      </span>
+      </Badge>
     );
   }
-  return <span className={cn("font-mono text-xs font-semibold", className)}>{number}</span>;
+  return <span className={cn("tabular font-mono text-xs font-semibold", className)}>{number}</span>;
 }

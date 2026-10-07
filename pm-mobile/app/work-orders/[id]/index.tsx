@@ -306,6 +306,20 @@ export default function WorkOrderDetailScreen() {
               </Text>
             </Pressable>
           )}
+          {!!wo.source_pm_task && (
+            <Pressable
+              onPress={() => wo.source_pm_task && router.push(`/pm-tasks/${wo.source_pm_task.id}`)}
+              style={[styles.notice, { backgroundColor: '#CCFBF1' }]}
+              accessibilityRole="link"
+            >
+              <Ionicons name="calendar-outline" size={20} color="#0F766E" />
+              <Text style={[styles.noticeText, { color: '#115E59' }]}>
+                Dari temuan {wo.source_pm_task.number}
+                {wo.source_pm_task.item_description ? ` — ${wo.source_pm_task.item_description}` : ''}. Ketuk untuk
+                membuka tugas PM.
+              </Text>
+            </Pressable>
+          )}
           {!!wo.source_service_request && (
             <Pressable
               onPress={() => wo.source_service_request && router.push(`/requests/${wo.source_service_request.id}`)}

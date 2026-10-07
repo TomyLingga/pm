@@ -8,9 +8,10 @@ import { AlertCircle, PencilLine, Search } from "lucide-react";
 import { AsyncCombobox } from "@/components/common/async-combobox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { useExecutorUnits } from "@/hooks/use-lookups";
@@ -76,6 +77,30 @@ type FieldKey = keyof WorkOrderPayload;
 interface WorkOrderFormProps {
   /** When given, the form edits this WO (`PUT`), otherwise it creates a new one. */
   workOrder?: WorkOrderDetail;
+}
+
+/** Skeleton shaped like the three form cards (used while the WO to edit is loading). */
+export function WorkOrderFormSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      {[2, 3, 2].map((fields, index) => (
+        <div key={index} className="panel space-y-4 p-4 sm:p-5">
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {Array.from({ length: fields }).map((_, field) => (
+              <div key={field} className="space-y-1.5">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
@@ -182,7 +207,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
 
   const submitting = mutation.isPending;
   const submitLabel = uploadProgress
-    ? `Mengunggah foto ${uploadProgress.done + 1}/${uploadProgress.total}...`
+    ? `Mengunggah foto ${uploadProgress.done + 1}/${uploadProgress.total}…`
     : isEdit
       ? "Simpan Perubahan"
       : "Kirim WO";
@@ -192,7 +217,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
       {formError ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+          className="flex items-start gap-2 rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm text-danger-foreground"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{formError}</span>
@@ -208,6 +233,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
           <Field label="Unit pelaksana" htmlFor="executor_unit_id" required error={errorFor("executor_unit_id")}>
             <Select
               id="executor_unit_id"
+              name="executor_unit_id"
               value={form.executorUnitId}
               onChange={(event) =>
                 setForm((current) => ({
@@ -220,21 +246,20 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
               disabled={executorUnits.isPending || submitting}
               invalid={!!errorFor("executor_unit_id")}
             >
-              <option value="">{executorUnits.isPending ? "Memuat..." : "Pilih unit pelaksana"}</option>
+              <option value="">{executorUnits.isPending ? "Memuat…" : "Pilih unit pelaksana"}</option>
               {executorUnits.data?.map((unit) => (
                 <option key={unit.id} value={String(unit.id)}>
                   {unit.display_name}
                 </option>
               ))}
             </Select>
-            {executorUnits.isError ? (
-              <p className="text-xs text-destructive">{errorMessage(executorUnits.error)}</p>
-            ) : null}
+            {executorUnits.isError ? <FieldError message={errorMessage(executorUnits.error)} /> : null}
           </Field>
 
           <Field label="Kategori" htmlFor="service_category_id" required error={errorFor("service_category_id")}>
             <Select
               id="service_category_id"
+              name="service_category_id"
               value={form.categoryId}
               onChange={(event) =>
                 setForm((current) => ({ ...current, categoryId: event.target.value, categoryNote: "" }))
@@ -261,10 +286,12 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
             >
               <Input
                 id="category_note"
+                name="category_note"
                 value={form.categoryNote}
                 onChange={(event) => update("categoryNote", event.target.value)}
-                placeholder="Jelaskan jenis pekerjaan"
+                placeholder="Contoh: pemasangan rak server"
                 maxLength={255}
+                autoComplete="off"
                 disabled={submitting}
                 invalid={!!errorFor("category_note")}
               />
@@ -281,13 +308,13 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             {form.manualEquipment ? (
-              <div className="space-y-3 rounded-lg border border-dashed p-3">
-                <div className="flex items-center justify-between gap-2">
+              <div className="space-y-3 rounded-lg border border-dashed bg-surface-2/50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium">Alat diisi manual</p>
                   <Button
                     variant="link"
-                    size="sm"
-                    className="h-auto p-0"
+                    size="xs"
+                    className="px-1"
                     onClick={() =>
                       setForm((current) => ({
                         ...current,
@@ -306,10 +333,14 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
                   <Field label="No. alat" htmlFor="equipment_code" error={errorFor("equipment_code")}>
                     <Input
                       id="equipment_code"
+                      name="equipment_code"
                       value={form.equipmentCode}
                       onChange={(event) => update("equipmentCode", event.target.value)}
                       placeholder="Contoh: PRN-01"
                       maxLength={100}
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="font-mono"
                       disabled={submitting}
                       invalid={!!errorFor("equipment_code")}
                     />
@@ -317,10 +348,12 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
                   <Field label="Nama alat" htmlFor="equipment_name" error={errorFor("equipment_name")}>
                     <Input
                       id="equipment_name"
+                      name="equipment_name"
                       value={form.equipmentName}
                       onChange={(event) => update("equipmentName", event.target.value)}
                       placeholder="Contoh: Printer Epson L3110"
                       maxLength={255}
+                      autoComplete="off"
                       disabled={submitting}
                       invalid={!!errorFor("equipment_name")}
                     />
@@ -348,7 +381,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
                   fetcher={(q, signal) => searchEquipment(q, executorUnitId, signal)}
                   getKey={(item) => item.id}
                   minChars={0}
-                  placeholder="Cari alat..."
+                  placeholder="Cari alat…"
                   emptyText="Alat tidak ditemukan."
                   disabled={submitting}
                   invalid={!!errorFor("equipment_id")}
@@ -374,7 +407,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
                         close();
                         setForm((current) => ({ ...current, manualEquipment: true, equipment: null }));
                       }}
-                      className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-sm font-medium text-primary hover:bg-accent"
+                      className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium text-primary transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <PencilLine className="h-4 w-4" aria-hidden />
                       Alat tidak ada di daftar? Isi manual
@@ -394,7 +427,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
               fetcher={(q, signal) => searchLocations(q, signal)}
               getKey={(item) => item.id}
               minChars={0}
-              placeholder="Cari lokasi..."
+              placeholder="Cari lokasi…"
               emptyText="Lokasi tidak ditemukan."
               disabled={submitting}
               invalid={!!errorFor("location_id")}
@@ -416,10 +449,12 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
           >
             <Input
               id="location_note"
+              name="location_note"
               value={form.locationNote}
               onChange={(event) => update("locationNote", event.target.value)}
               placeholder="Contoh: Ruang server lt. 2"
               maxLength={255}
+              autoComplete="off"
               disabled={submitting}
               invalid={!!errorFor("location_note")}
             />
@@ -430,6 +465,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Permintaan pekerjaan</CardTitle>
+          <CardDescription>Jelaskan apa yang rusak atau dibutuhkan dan seberapa mendesak.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Field label="Prioritas" required error={errorFor("priority")}>
@@ -446,12 +482,14 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
             htmlFor="request_description"
             required
             error={errorFor("request_description")}
+            hint={`${form.description.length}/2000 karakter.`}
           >
             <Textarea
               id="request_description"
+              name="request_description"
               value={form.description}
               onChange={(event) => update("description", event.target.value)}
-              placeholder="Jelaskan kerusakan atau pekerjaan yang diminta..."
+              placeholder="Contoh: Printer tidak bisa mencetak, lampu indikator berkedip merah…"
               rows={5}
               maxLength={2000}
               disabled={submitting}
@@ -469,7 +507,7 @@ export function WorkOrderForm({ workOrder }: WorkOrderFormProps) {
         </CardContent>
       </Card>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t bg-card/95 p-3 backdrop-blur sm:static sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
+      <div className="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t bg-card/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/85 sm:static sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
         <Button asChild variant="outline" className="flex-1 sm:flex-none">
           <Link href={workOrder ? `/work-orders/${workOrder.id}` : "/work-orders"} aria-disabled={submitting}>
             Batal

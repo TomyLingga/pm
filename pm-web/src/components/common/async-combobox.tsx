@@ -22,8 +22,9 @@ export function AsyncCombobox<T>({ selected, onChange, renderSelected, ...props 
     return (
       <div
         className={cn(
-          "flex min-h-10 items-center justify-between gap-2 rounded-md border border-input bg-accent/40 px-3 py-2 text-sm shadow-sm",
-          props.invalid && "border-destructive",
+          "flex min-h-10 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-sm shadow-sm",
+          props.invalid && "border-danger",
+          props.disabled && "bg-surface-2 opacity-60",
           props.className,
         )}
       >
@@ -35,10 +36,10 @@ export function AsyncCombobox<T>({ selected, onChange, renderSelected, ...props 
             setText("");
           }}
           disabled={props.disabled}
-          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="-mr-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none"
           aria-label="Hapus pilihan"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
     );

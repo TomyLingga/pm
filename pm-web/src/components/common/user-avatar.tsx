@@ -17,7 +17,8 @@ export function UserAvatar({ name, photoUrl, className }: UserAvatarProps) {
   return (
     <span
       className={cn(
-        "inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-semibold text-primary",
+        "inline-flex h-8 w-8 shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-primary-soft text-xs font-semibold text-primary-soft-foreground ring-1 ring-inset ring-primary/10",
+        showPhoto && "bg-surface-2",
         className,
       )}
       aria-hidden
@@ -27,6 +28,8 @@ export function UserAvatar({ name, photoUrl, className }: UserAvatarProps) {
         <img
           src={photoUrl}
           alt=""
+          width={64}
+          height={64}
           className="h-full w-full object-cover"
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}

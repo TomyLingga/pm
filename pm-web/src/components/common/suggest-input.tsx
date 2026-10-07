@@ -122,7 +122,10 @@ export function SuggestInput<T>({
     <div ref={containerRef} className={cn("relative", className)}>
       <div className="relative">
         {showSearchIcon ? (
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
         ) : null}
         <Input
           id={inputId}
@@ -137,6 +140,7 @@ export function SuggestInput<T>({
           disabled={disabled}
           invalid={invalid}
           autoComplete="off"
+          spellCheck={false}
           role="combobox"
           aria-label={aria["aria-label"]}
           aria-expanded={showPopup}
@@ -146,17 +150,22 @@ export function SuggestInput<T>({
           className={cn(showSearchIcon && "pl-9", waiting && "pr-9")}
         />
         {waiting ? (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          <Loader2
+            className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
+            aria-hidden
+          />
         ) : null}
       </div>
 
       {showPopup ? (
-        <div className="absolute left-0 right-0 top-full z-40 mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
-          <ul id={listId} role="listbox" className="max-h-64 overflow-y-auto py-1">
+        <div className="absolute left-0 right-0 top-full z-40 mt-1.5 overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg shadow-edge">
+          <ul id={listId} role="listbox" className="max-h-64 overflow-y-auto p-1 [overscroll-behavior:contain]">
             {term.length < minChars ? null : query.isError ? (
-              <li className="px-3 py-2 text-sm text-destructive">{errorMessage(query.error)}</li>
+              <li className="px-2 py-2 text-sm text-danger-foreground">{errorMessage(query.error)}</li>
             ) : items.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-muted-foreground">{waiting ? "Mencari..." : emptyText}</li>
+              <li className="px-2 py-2 text-sm text-muted-foreground" aria-live="polite">
+                {waiting ? "Mencari…" : emptyText}
+              </li>
             ) : (
               items.map((item, index) => (
                 <li
@@ -168,8 +177,8 @@ export function SuggestInput<T>({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(item)}
                   className={cn(
-                    "cursor-pointer px-3 py-2 text-sm",
-                    index === activeIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted",
+                    "cursor-pointer rounded-md px-2 py-2 text-sm transition-colors duration-150",
+                    index === activeIndex ? "bg-accent text-accent-foreground" : "hover:bg-surface-2",
                   )}
                 >
                   {renderOption(item)}
@@ -177,7 +186,7 @@ export function SuggestInput<T>({
               ))
             )}
           </ul>
-          {footer ? <div className="border-t bg-muted/40 p-1">{footer(close)}</div> : null}
+          {footer ? <div className="border-t bg-surface-2/60 p-1">{footer(close)}</div> : null}
         </div>
       ) : null}
     </div>

@@ -6,11 +6,12 @@ import { queryKeys } from "@/lib/query-keys";
 import type { ExecutorUnitPurpose } from "@/types/lookups";
 
 /** Executor units + their service categories (`for=work_order` or `for=request`). */
-export function useExecutorUnits(purpose: ExecutorUnitPurpose = "work_order") {
+export function useExecutorUnits(purpose: ExecutorUnitPurpose = "work_order", enabled = true) {
   return useQuery({
     queryKey: queryKeys.executorUnits(purpose),
     queryFn: ({ signal }) => getExecutorUnits(purpose, signal),
     staleTime: 10 * 60 * 1000,
+    enabled,
   });
 }
 

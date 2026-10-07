@@ -1,14 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { useDebounced } from '@/hooks/useDebounced';
 import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus';
 import { errorMessage } from '@/lib/api';
 import { colors, radius } from '@/lib/theme';
 import type { Paginated, Priority } from '@/lib/types';
-import { ChipBar, EmptyState, ErrorView, Fab, LoadingView } from './ui';
+import { Chip, ChipBar, EmptyState, ErrorView, Fab, LoadingView } from './ui';
 
 export interface ListFilter {
   key: string;
@@ -25,6 +35,13 @@ interface PagedListProps<T extends { id: number }> {
   renderItem: (item: T) => React.ReactElement;
   filters: ListFilter[];
   defaultFilterKey?: string;
+  /**
+   * Multi-select chips: several status filters can be active at once (their statuses are
+   * combined); the filter without a `status` ("Semua") clears the selection.
+   */
+  multiple?: boolean;
+  /** Initially active chips in `multiple` mode. */
+  defaultFilterKeys?: string[];
   searchPlaceholder: string;
   emptyTitle: string;
   emptyMessage?: string;
@@ -41,6 +58,8 @@ export function PagedList<T extends { id: number }>({
   renderItem,
   filters,
   defaultFilterKey,
+  multiple = false,
+  defaultFilterKeys,
   searchPlaceholder,
   emptyTitle,
   emptyMessage,
@@ -49,15 +68,33 @@ export function PagedList<T extends { id: number }>({
   header,
 }: PagedListProps<T>) {
   const [filterKey, setFilterKey] = useState(defaultFilterKey ?? filters[0]?.key ?? 'all');
+  const [selectedKeys, setSelectedKeys] = useState<string[]>(defaultFilterKeys ?? []);
   const [search, setSearch] = useState('');
   const q = useDebounced(search.trim(), 400);
   const [refreshing, setRefreshing] = useState(false);
 
   const filter = filters.find((f) => f.key === filterKey) ?? filters[0];
+  // In multi-select mode the status filter is the union of the active chips.
+  const status = multiple
+    ? filters
+        .filter((f) => f.status && selectedKeys.includes(f.key))
+        .map((f) => f.status)
+        .join(',') || undefined
+    : filter?.status;
+  const priority = multiple ? undefined : filter?.priority;
+
+  const toggleKey = (key: string) => {
+    const target = filters.find((f) => f.key === key);
+    if (!target?.status) {
+      setSelectedKeys([]);
+      return;
+    }
+    setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  };
 
   const query = useInfiniteQuery({
-    queryKey: [...queryKey, { status: filter?.status, priority: filter?.priority, q }],
-    queryFn: ({ pageParam }) => fetchPage({ page: pageParam, status: filter?.status, priority: filter?.priority, q }),
+    queryKey: [...queryKey, { status, priority, q }],
+    queryFn: ({ pageParam }) => fetchPage({ page: pageParam, status, priority, q }),
     initialPageParam: 1,
     getNextPageParam: (last) =>
       last.meta && last.meta.current_page < last.meta.last_page ? last.meta.current_page + 1 : undefined,
@@ -115,13 +152,27 @@ export function PagedList<T extends { id: number }>({
           </Pressable>
         )}
       </View>
-      {filters.length > 1 && (
+      {filters.length > 1 && !multiple && (
         <View>
           <ChipBar
             options={filters.map((f) => ({ value: f.key, label: f.label }))}
             value={filterKey}
             onChange={setFilterKey}
           />
+        </View>
+      )}
+      {filters.length > 1 && multiple && (
+        <View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+            {filters.map((f) => (
+              <Chip
+                key={f.key}
+                label={f.label}
+                selected={f.status ? selectedKeys.includes(f.key) : selectedKeys.length === 0}
+                onPress={() => toggleKey(f.key)}
+              />
+            ))}
+          </ScrollView>
         </View>
       )}
 
@@ -182,6 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   searchInput: { flex: 1, fontSize: 17, color: colors.text, paddingVertical: 8 },
+  chipBar: { gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
   list: { padding: 16, paddingTop: 4, flexGrow: 1 },
   total: { fontSize: 14, color: colors.textSubtle, marginBottom: 8, fontWeight: '600' },
   footer: { paddingVertical: 24, alignItems: 'center', marginBottom: 70 },

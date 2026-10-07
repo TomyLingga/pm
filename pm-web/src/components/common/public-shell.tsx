@@ -1,17 +1,22 @@
 import * as React from "react";
-import { Wrench } from "lucide-react";
 
 /** Minimal centred layout for public pages (SSO, access denied, QR verification). */
 export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 py-10">
-      <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Wrench className="h-4 w-4" aria-hidden />
+    <div className="bg-grid relative flex min-h-[100dvh] flex-col items-center justify-center gap-6 px-4 py-10">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.10),transparent_55%),radial-gradient(ellipse_at_center,transparent_40%,hsl(var(--background))_80%)]"
+        aria-hidden
+      />
+      <div className="relative flex items-center gap-2.5 text-sm font-semibold">
+        {/* eslint-disable-next-line @next/next/no-img-element -- static logo from /public */}
+        <img src="/logo.png" alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full" aria-hidden />
+        <span className="leading-tight">
+          <span className="block">PrevenTech</span>
+          <span className="block text-xs font-normal text-muted-foreground">PT Industri Nabati Lestari</span>
         </span>
-        PM-App PT INL
       </div>
-      <div className="w-full max-w-md">{children}</div>
+      <div className="relative w-full max-w-md">{children}</div>
     </div>
   );
 }

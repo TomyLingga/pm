@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAttachmentRequest;
 use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
+use App\Models\PmTask;
+use App\Models\PmTaskItem;
 use App\Models\ServiceRequest;
 use App\Models\WorkOrder;
 use App\Services\Documents\AttachmentService;
@@ -77,10 +79,14 @@ class AttachmentController extends Controller
         return (new AttachmentResource($attachment->load('uploadedBy')))->response()->setStatusCode(201);
     }
 
-    private function owner(Attachment $attachment): WorkOrder|ServiceRequest
+    /** The document whose policy and status guard the attachment (a checklist item answers to its PM task). */
+    private function owner(Attachment $attachment): WorkOrder|ServiceRequest|PmTask
     {
         $owner = $attachment->attachable;
-        abort_unless($owner instanceof WorkOrder || $owner instanceof ServiceRequest, 404);
+        if ($owner instanceof PmTaskItem) {
+            $owner = $owner->task;
+        }
+        abort_unless($owner instanceof WorkOrder || $owner instanceof ServiceRequest || $owner instanceof PmTask, 404);
 
         return $owner;
     }

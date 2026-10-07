@@ -8,8 +8,9 @@ export default function NewRequestPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <PageHeader
+        eyebrow="Form Request"
         title="Buat Form Request"
-        description="Permintaan yang membutuhkan biaya/persetujuan (formulir INLHO/BSIS-ITC/F-004)."
+        description="Permintaan yang membutuhkan biaya atau persetujuan (formulir INLHO/BSIS-ITC/F-004)."
         backHref="/requests"
         backLabel="Daftar Form Request"
       />

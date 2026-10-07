@@ -1,0 +1,23 @@
+# Keep images small and secrets out of them (build context = repository root).
+.git
+.gitignore
+docs
+pm-mobile
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/.next
+**/vendor
+**/storage/app/*
+**/storage/logs/*
+**/storage/framework/cache/*
+**/storage/framework/sessions/*
+**/storage/framework/views/*
+**/bootstrap/cache/*
+**/tests
+**/*.md
+!pm-api/README.md
+!pm-web/README.md
+**/.DS_Store
+**/Thumbs.db

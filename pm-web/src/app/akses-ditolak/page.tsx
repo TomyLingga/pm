@@ -13,16 +13,18 @@ export default function AccessDeniedPage() {
   return (
     <PublicShell>
       <Card>
-        <CardContent className="flex flex-col items-center gap-4 py-10 text-center sm:py-10">
-          <Lock className="h-10 w-10 text-muted-foreground" aria-hidden />
-          <div>
-            <h1 className="text-lg font-semibold">Akses ditolak</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Anda belum masuk atau sesi Anda telah berakhir. PM-App hanya dapat dibuka melalui Portal INTES.
+        <CardContent className="flex flex-col items-center gap-5 p-6 text-center sm:p-8">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-warning-soft text-warning-foreground">
+            <Lock className="h-6 w-6" aria-hidden />
+          </span>
+          <div className="space-y-1.5">
+            <h1 className="text-lg font-semibold tracking-tight">Akses ditolak</h1>
+            <p className="text-sm text-muted-foreground">
+              Anda belum masuk atau sesi Anda telah berakhir. PrevenTech hanya dapat dibuka melalui Portal INTES.
             </p>
           </div>
           {portalUrl ? (
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <a href={portalUrl}>Buka melalui Portal</a>
             </Button>
           ) : (

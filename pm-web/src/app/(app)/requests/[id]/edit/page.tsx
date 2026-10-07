@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { LoadError } from "@/components/common/load-error";
 import { PageHeader } from "@/components/common/page-header";
-import { EmptyState, LoadingState } from "@/components/common/states";
-import { RequestForm } from "@/components/service-requests/request-form";
+import { EmptyState } from "@/components/common/states";
+import { RequestForm, RequestFormSkeleton } from "@/components/service-requests/request-form";
 import { useServiceRequest } from "@/components/service-requests/use-request-action";
 import { Button } from "@/components/ui/button";
 import { parseId } from "@/lib/utils";
@@ -22,13 +22,14 @@ export default function EditRequestPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <PageHeader
-        title={query.data?.request_number ? `Ubah ${query.data.request_number}` : "Ubah Form Request"}
+        eyebrow={query.data?.request_number ? <span className="font-mono">{query.data.request_number}</span> : "Form Request"}
+        title="Ubah Form Request"
         description="Perubahan hanya dapat dilakukan selama Form Request berstatus DRAFT."
         backHref={`/requests/${id}`}
         backLabel="Detail Form Request"
       />
       {query.isPending ? (
-        <LoadingState />
+        <RequestFormSkeleton />
       ) : query.isError ? (
         <LoadError error={query.error} onRetry={() => query.refetch()} entity="Form Request" backHref="/requests" />
       ) : !query.data.permissions.can_update ? (

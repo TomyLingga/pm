@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserBriefResource;
-use App\Models\Equipment;
 use App\Models\ExecutorUnit;
 use App\Models\Location;
 use App\Models\Material;
@@ -31,7 +30,9 @@ class LookupController extends Controller
             ->where($forRequest ? 'accepts_requests' : 'accepts_work_orders', true)
             ->with(['categories' => fn ($q) => $q->where('is_active', true)->where($forRequest ? 'for_request' : 'for_work_order', true)])
             ->orderBy('display_name')
-            ->get();
+            ->get()
+            // A seksi without categories for this form cannot receive documents yet.
+            ->filter(fn (ExecutorUnit $u) => $u->categories->isNotEmpty());
 
         return response()->json(['data' => $units->map(fn (ExecutorUnit $u) => $this->executorUnit($u))->values()]);
     }
@@ -118,21 +119,17 @@ class LookupController extends Controller
         return response()->json(['data' => $rows]);
     }
 
-    public function equipment(Request $request): JsonResponse
+    /** Quick-add of a function location from the equipment form (leads / admin). */
+    public function storeLocation(Request $request, ExecutorDirectory $directory): JsonResponse
     {
-        $rows = $this->search(Equipment::query()->with('location:id,code,name'), $request->query('q'))
-            ->when($request->query('executor_unit_id'), fn (Builder $q, $id) => $q->where(
-                fn (Builder $w) => $w->where('executor_unit_id', $id)->orWhereNull('executor_unit_id')
-            ))
-            ->where('status', '!=', 'disposed')
-            ->orderBy('code')->limit(self::LIMIT)->get();
+        abort_unless($directory->isLeadAnywhere($request->user()), 403, 'Hanya pimpinan unit pelaksana yang dapat menambah lokasi.');
 
-        return response()->json(['data' => $rows->map(fn (Equipment $e) => [
-            'id' => $e->id,
-            'code' => $e->code,
-            'name' => $e->name,
-            'location' => $e->location ? ['id' => $e->location->id, 'code' => $e->location->code, 'name' => $e->location->name] : null,
-        ])->values()]);
+        $location = Location::query()->create($request->validate([
+            'code' => ['required', 'string', 'max:50', 'unique:locations,code'],
+            'name' => ['required', 'string', 'max:150'],
+        ]));
+
+        return response()->json(['data' => $location->only(['id', 'code', 'name'])], 201);
     }
 
     public function materials(Request $request): JsonResponse

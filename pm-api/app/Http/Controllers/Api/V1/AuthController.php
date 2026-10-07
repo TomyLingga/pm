@@ -35,7 +35,7 @@ class AuthController extends Controller
             }
 
             return response()->json([
-                'message' => 'Token SSO tidak valid atau sudah kedaluwarsa. Buka kembali PM-App dari Portal INTES.',
+                'message' => 'Token SSO tidak valid atau sudah kedaluwarsa. Buka kembali PrevenTech dari Portal INTES.',
             ], 401);
         }
 

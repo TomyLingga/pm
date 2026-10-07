@@ -5,6 +5,7 @@ namespace App\Services\ServiceRequests;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\Org\ExecutorDirectory;
+use App\Support\EndedPeriodFilter;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Builder;
 class ServiceRequestQuery
 {
     public const SCOPES = ['mine', 'unit', 'executor', 'all'];
+
+    public const FINAL_STATUSES = ['completed', 'rejected', 'cancelled', 'converted'];
 
     public function __construct(private ExecutorDirectory $directory)
     {
@@ -28,7 +31,7 @@ class ServiceRequestQuery
                 ->whereNotNull('submitted_at'),
             'all' => $user->canSeeEverything()
                 ? $query->where(fn (Builder $q) => $q->whereNotNull('submitted_at')->orWhere('requester_id', $user->id))
-                : throw new AuthorizationException('Hanya admin/management yang dapat melihat semua request.'),
+                : throw new AuthorizationException('Hanya admin yang dapat melihat semua request.'),
             default => $query->where('requester_id', $user->id),
         };
 
@@ -40,12 +43,10 @@ class ServiceRequestQuery
                 $query->where($field, $filters[$field]);
             }
         }
-        if (! empty($filters['from'])) {
-            $query->whereDate('created_at', '>=', $filters['from']);
-        }
-        if (! empty($filters['to'])) {
-            $query->whereDate('created_at', '<=', $filters['to']);
-        }
+        // Period for finished requests only (selesai / ditolak / dibatalkan / dialihkan, by the date they ended);
+        // drafts and requests still waiting or in progress are always listed.
+        EndedPeriodFilter::apply($query, self::FINAL_STATUSES, ['completed_at', 'rejected_at', 'cancelled_at', 'converted_at'],
+            $filters['from'] ?? null, $filters['to'] ?? null);
         if (! empty($filters['q'])) {
             $term = '%'.mb_strtolower(trim($filters['q'])).'%';
             $query->where(fn (Builder $q) => $q->whereRaw('LOWER(request_number) LIKE ?', [$term])

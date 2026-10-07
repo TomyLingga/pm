@@ -119,7 +119,7 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
   return (
     <div className="space-y-3">
       {rows.length === 0 ? (
-        <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
           Belum ada pekerja. Tambahkan minimal satu pekerja.
         </p>
       ) : (
@@ -128,18 +128,19 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
           const selectValue = row.manual ? MANUAL : row.user_id ? String(row.user_id) : "";
           const knownStaff = row.user_id !== null && staff.some((item) => item.id === row.user_id);
           return (
-            <div key={row.key} className="space-y-3 rounded-md border p-3">
+            <div key={row.key} className="space-y-3 rounded-lg border p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">Pekerja {index + 1}</span>
+                <span className="text-xs font-semibold text-muted-foreground">Pekerja {index + 1}</span>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-medium">
+                  <span className="tabular inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-0.5 text-xs font-medium">
                     <Clock className="h-3 w-3" aria-hidden />
+                    <span className="sr-only">Durasi </span>
                     {minutes !== null && minutes > 0 ? formatMinutes(minutes) : "-"}
                   </span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="-my-1 h-9 w-9 text-muted-foreground hover:bg-danger-soft hover:text-danger-foreground"
                     onClick={() => onChange(rows.filter((item) => item.key !== row.key))}
                     disabled={disabled}
                     aria-label={`Hapus pekerja ${index + 1}`}
@@ -150,7 +151,7 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <Label htmlFor={`worker-${row.key}`} className="text-xs">
                     Nama pekerja
                   </Label>
@@ -161,7 +162,7 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
                     disabled={disabled}
                     invalid={!!errorAt(index, "worker_name") && !row.manual}
                   >
-                    <option value="">{staffLoading ? "Memuat staf..." : "Pilih pekerja"}</option>
+                    <option value="">{staffLoading ? "Memuat staf…" : "Pilih pekerja"}</option>
                     {row.user_id !== null && !row.manual && !knownStaff ? (
                       <option value={String(row.user_id)}>{row.worker_name}</option>
                     ) : null}
@@ -177,8 +178,9 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
                       aria-label={`Nama pekerja ${index + 1}`}
                       value={row.worker_name}
                       onChange={(event) => patch(row.key, { worker_name: event.target.value })}
-                      placeholder="Nama pekerja"
+                      placeholder="Contoh: Budi (vendor)"
                       maxLength={150}
+                      autoComplete="off"
                       disabled={disabled}
                       invalid={!!errorAt(index, "worker_name")}
                       autoFocus
@@ -188,23 +190,26 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
                 </div>
 
                 {(["started_at", "finished_at"] as const).map((field) => (
-                  <div key={field} className="space-y-1">
-                    <div className="flex items-center justify-between">
+                  <div key={field} className="space-y-1.5">
+                    <div className="flex h-5 items-center justify-between">
                       <Label htmlFor={`${field}-${row.key}`} className="text-xs">
                         {field === "started_at" ? "Mulai" : "Selesai"}
                       </Label>
-                      <button
-                        type="button"
-                        className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                      <Button
+                        variant="link"
+                        size="xs"
+                        className="h-7 px-1.5"
                         onClick={() => patch(row.key, { [field]: nowDateTimeLocalValue() })}
                         disabled={disabled}
+                        aria-label={`Isi jam ${field === "started_at" ? "mulai" : "selesai"} pekerja ${index + 1} dengan waktu sekarang`}
                       >
                         Sekarang
-                      </button>
+                      </Button>
                     </div>
                     <Input
                       id={`${field}-${row.key}`}
                       type="datetime-local"
+                      className="tabular"
                       value={row[field]}
                       onChange={(event) => patch(row.key, { [field]: event.target.value })}
                       disabled={disabled}
@@ -225,8 +230,8 @@ export function LaboursEditor({ rows, onChange, staff, staffLoading, errorAt, di
           Tambah pekerja
         </Button>
         {rows.length > 0 ? (
-          <p className="text-sm">
-            Total durasi: <span className="font-semibold">{formatMinutes(total)}</span>
+          <p className="text-sm" aria-live="polite">
+            Total durasi: <span className="tabular font-semibold">{formatMinutes(total)}</span>
           </p>
         ) : null}
       </div>

@@ -4,15 +4,16 @@ import * as React from "react";
 import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { FileSpreadsheet, Plus } from "lucide-react";
+import { PageHeader } from "@/components/common/page-header";
 import { Pagination } from "@/components/common/pagination";
+import { ScopeTabs } from "@/components/common/scope-tabs";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { useCurrentUser } from "@/components/layout/current-user";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
-import { hasGlobalRole, isExecutorStaff } from "@/lib/auth";
-import { SR_SCOPE_LABELS } from "@/lib/constants";
+import { isAdmin, isExecutorStaff } from "@/lib/auth";
+import { SR_SCOPE_DESCRIPTIONS, SR_SCOPE_LABELS } from "@/lib/constants";
 import { queryKeys } from "@/lib/query-keys";
 import { listServiceRequests, serviceRequestExportUrl } from "@/lib/service-requests";
 import type { Me } from "@/types/auth";
@@ -25,8 +26,53 @@ import { useRequestListParams } from "./use-request-list-params";
 function scopesFor(me: Me): ServiceRequestScope[] {
   const scopes: ServiceRequestScope[] = ["mine", "unit"];
   if (isExecutorStaff(me)) scopes.push("executor");
-  if (hasGlobalRole(me, "admin", "management")) scopes.push("all");
+  if (isAdmin(me)) scopes.push("all");
   return scopes;
+}
+
+/** Placeholder shaped like the list: a table on desktop, stacked cards on phones. */
+export function RequestListSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div aria-hidden>
+      <div className="panel hidden overflow-hidden md:block">
+        <div className="flex items-center gap-6 border-b bg-surface-2/70 px-3 py-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="ml-auto h-3 w-20" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        {Array.from({ length: rows }).map((_, index) => (
+          <div key={index} className="flex items-center gap-6 border-b px-3 py-3 last:border-0">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-4 w-24" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3 md:hidden">
+        {Array.from({ length: Math.min(rows, 3) }).map((_, index) => (
+          <div key={index} className="panel space-y-3 p-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+            <div className="space-y-1.5 pt-1">
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function RequestListView() {
@@ -47,36 +93,35 @@ export function RequestListView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Form Request</h1>
-          <p className="text-sm text-muted-foreground">Permintaan yang membutuhkan biaya atau persetujuan atasan.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" className="flex-1 sm:flex-none">
-            <a href={serviceRequestExportUrl(apiParams)} download>
-              <FileSpreadsheet />
-              Export Excel
-            </a>
-          </Button>
-          <Button asChild className="flex-1 sm:flex-none">
-            <Link href="/requests/new">
-              <Plus />
-              Buat Request
-            </Link>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Form Request"
+        description="Permintaan yang membutuhkan biaya atau persetujuan atasan."
+        actions={
+          <>
+            <Button asChild variant="outline" className="flex-1 sm:flex-none">
+              <a href={serviceRequestExportUrl(apiParams)} download>
+                <FileSpreadsheet aria-hidden />
+                Export Excel
+              </a>
+            </Button>
+            <Button asChild className="flex-1 sm:flex-none">
+              <Link href="/requests/new">
+                <Plus aria-hidden />
+                Buat Request
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      <Tabs value={scope} onValueChange={(value) => setScope(value as ServiceRequestScope)}>
-        <TabsList className="w-full justify-start sm:w-auto">
-          {scopes.map((item) => (
-            <TabsTrigger key={item} value={item}>
-              {SR_SCOPE_LABELS[item]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <ScopeTabs
+        scopes={scopes}
+        value={scope}
+        labels={SR_SCOPE_LABELS}
+        descriptions={SR_SCOPE_DESCRIPTIONS}
+        onChange={setScope}
+        ariaLabel="Lingkup daftar Form Request"
+      />
 
       <RequestFilters
         filters={filters}
@@ -86,11 +131,7 @@ export function RequestListView() {
       />
 
       {query.isPending ? (
-        <div className="space-y-3" aria-hidden>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-20 w-full" />
-          ))}
-        </div>
+        <RequestListSkeleton />
       ) : query.isError ? (
         <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />
       ) : items.length === 0 ? (
@@ -111,7 +152,7 @@ export function RequestListView() {
             ) : scope === "mine" ? (
               <Button asChild>
                 <Link href="/requests/new">
-                  <Plus />
+                  <Plus aria-hidden />
                   Buat Request
                 </Link>
               </Button>
@@ -119,8 +160,11 @@ export function RequestListView() {
           }
         />
       ) : (
-        <div className={query.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
-          <div className="hidden overflow-hidden rounded-lg border bg-card shadow-sm md:block">
+        <div
+          className={query.isPlaceholderData ? "opacity-60 transition-opacity duration-150" : undefined}
+          aria-busy={query.isPlaceholderData || undefined}
+        >
+          <div className="panel hidden overflow-hidden md:block">
             <RequestTable items={items} />
           </div>
           <div className="md:hidden">

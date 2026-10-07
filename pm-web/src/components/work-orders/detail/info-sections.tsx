@@ -1,5 +1,6 @@
 import { ClipboardList, Crown, FileCheck2, Users } from "lucide-react";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMinutes } from "@/lib/format";
 import { formatNumber } from "@/lib/utils";
 import type { WorkOrderDetail } from "@/types/work-order";
@@ -42,7 +43,7 @@ export function InfoSection({ wo }: { wo: WorkOrderDetail }) {
           },
           { label: "Lokasi", value: locationLabel(wo) },
           { label: "Prioritas", value: <PriorityBadge priority={wo.priority} label={wo.priority_label} /> },
-          { label: "Tanggal terbit", value: formatDateTime(wo.issued_at) },
+          { label: "Tanggal terbit", value: <span className="tabular">{formatDateTime(wo.issued_at)}</span> },
           {
             label: "Permintaan pekerjaan",
             value: <span className="whitespace-pre-wrap">{wo.request_description}</span>,
@@ -62,7 +63,7 @@ export function AssignmentSection({ wo }: { wo: WorkOrderDetail }) {
     <Section title="Penugasan" icon={<Users className="h-4 w-4" aria-hidden />}>
       <div className="space-y-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Teknisi</p>
+          <p className="text-xs font-medium text-muted-foreground">Teknisi</p>
           {assignees.length === 0 ? (
             <p className="mt-1 text-sm text-muted-foreground">Belum ada teknisi yang ditugaskan.</p>
           ) : (
@@ -74,10 +75,10 @@ export function AssignmentSection({ wo }: { wo: WorkOrderDetail }) {
                     <p className="flex items-center gap-1.5 text-sm font-medium">
                       <span className="truncate">{assignee.name}</span>
                       {assignee.is_lead ? (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                        <Badge variant="warning" className="gap-0.5 px-1.5 py-0 text-[10px] leading-4">
                           <Crown className="h-3 w-3" aria-hidden />
                           Ketua
-                        </span>
+                        </Badge>
                       ) : null}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
@@ -90,7 +91,7 @@ export function AssignmentSection({ wo }: { wo: WorkOrderDetail }) {
           )}
         </div>
         <InfoList
-          className="sm:grid-cols-1"
+          className="border-t pt-4 sm:grid-cols-1"
           items={[
             {
               label: "Diterima / ditugaskan oleh",
@@ -105,14 +106,22 @@ export function AssignmentSection({ wo }: { wo: WorkOrderDetail }) {
                   <PersonStamp name={wo.picked_by?.name ?? null} time={formatDateTime(wo.picked_at, "")} />
                 ) : null,
             },
-            { label: "Waktu penyelesaian (SLA)", value: wo.sla_minutes !== null ? formatMinutes(wo.sla_minutes) : null },
+            {
+              label: "Waktu penyelesaian (SLA)",
+              value: wo.sla_minutes !== null ? <span className="tabular">{formatMinutes(wo.sla_minutes)}</span> : null,
+            },
             ...(wo.acceptance_due_at && wo.status === "completed"
-              ? [{ label: "Batas konfirmasi penerimaan", value: formatDateTime(wo.acceptance_due_at) }]
+              ? [
+                  {
+                    label: "Batas konfirmasi penerimaan",
+                    value: <span className="tabular">{formatDateTime(wo.acceptance_due_at)}</span>,
+                  },
+                ]
               : []),
             ...(wo.rework_count > 0 ? [{ label: "Dikerjakan ulang", value: `${wo.rework_count} kali` }] : []),
             ...(wo.status === "cancelled"
               ? [
-                  { label: "Dibatalkan", value: formatDateTime(wo.cancelled_at) },
+                  { label: "Dibatalkan", value: <span className="tabular">{formatDateTime(wo.cancelled_at)}</span> },
                   { label: "Alasan pembatalan", value: <span className="whitespace-pre-wrap">{wo.cancel_reason}</span> },
                 ]
               : []),
@@ -151,7 +160,10 @@ export function WorkDoneSection({ wo }: { wo: WorkOrderDetail }) {
           },
           {
             label: "Total breakdown",
-            value: wo.total_breakdown_hours !== null ? `${formatNumber(wo.total_breakdown_hours)} jam` : null,
+            value:
+              wo.total_breakdown_hours !== null ? (
+                <span className="tabular">{formatNumber(wo.total_breakdown_hours)} jam</span>
+              ) : null,
           },
           { label: "Remarks", value: wo.remarks ? <span className="whitespace-pre-wrap">{wo.remarks}</span> : null },
         ]}

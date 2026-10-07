@@ -6,8 +6,9 @@ export const metadata: Metadata = { title: "Buat Work Order" };
 
 export default function NewWorkOrderPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
+        eyebrow="Work Order"
         title="Buat Work Order"
         description="Ajukan permintaan perbaikan atau dukungan ke unit pelaksana."
         backHref="/work-orders"

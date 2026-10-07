@@ -34,9 +34,9 @@ Notifications.setNotificationHandler({
 export async function ensureNotificationChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
-    name: 'Alarm (WO Tinggi & Persetujuan)',
+    name: 'Alarm (WO Tinggi, PM & Persetujuan)',
     description:
-      'WO prioritas Tinggi baru/ditugaskan, WO ditolak pemohon, pengingat persetujuan > 24 jam, request ditolak/diminta revisi.',
+      'WO prioritas Tinggi baru/ditugaskan, WO ditolak pemohon, tugas PM akan/sudah jatuh tempo atau terlambat, pengingat persetujuan > 24 jam, request ditolak/diminta revisi.',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000],
     enableVibrate: true,
@@ -53,7 +53,7 @@ export async function ensureNotificationChannels(): Promise<void> {
   });
   await Notifications.setNotificationChannelAsync(DEFAULT_CHANNEL_ID, {
     name: 'Notifikasi Umum',
-    description: 'Pembaruan status Work Order dan Form Request.',
+    description: 'Pembaruan status Work Order, Form Request dan tugas PM.',
     importance: Notifications.AndroidImportance.DEFAULT,
     sound: 'default',
     showBadge: true,
@@ -120,7 +120,7 @@ export async function unregisterPush(): Promise<void> {
   }
 }
 
-/** Resolves the target document (work order or Form Request) from a notification's data payload. */
+/** Resolves the target document (work order, Form Request or PM task) from a notification's data payload. */
 export function documentRefFromNotification(notification: Notifications.Notification): DocumentRef | null {
   return documentRefFrom(notification.request.content.data as Record<string, unknown> | undefined);
 }

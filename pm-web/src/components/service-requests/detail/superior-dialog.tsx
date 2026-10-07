@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Send, UserRoundCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -86,11 +87,14 @@ function SuperiorForm({ request, mode, onDone }: { request: ServiceRequestDetail
         <Field label="Alasan (opsional)" htmlFor="change-superior-reason" error={firstError(errors, "reason")}>
           <Textarea
             id="change-superior-reason"
+            name="reason"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
             maxLength={1000}
             placeholder="Contoh: atasan sedang cuti"
+            disabled={mutation.isPending}
+            invalid={!!firstError(errors, "reason")}
           />
         </Field>
       ) : null}
@@ -100,7 +104,8 @@ function SuperiorForm({ request, mode, onDone }: { request: ServiceRequestDetail
           Batal
         </Button>
         <Button type="submit" loading={mutation.isPending}>
-          {mode === "submit" ? "Ajukan" : "Ganti Atasan"}
+          {mutation.isPending ? null : mode === "submit" ? <Send aria-hidden /> : <UserRoundCog aria-hidden />}
+          {mode === "submit" ? "Ajukan Form Request" : "Ganti Atasan"}
         </Button>
       </DialogFooter>
     </form>

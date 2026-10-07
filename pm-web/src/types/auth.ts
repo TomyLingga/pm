@@ -40,5 +40,7 @@ export interface Me {
   bagian: string | null;
   sub_bagian: string | null;
   roles: string[];
+  /** Admin sees every unit and manages access; everybody else is a regular user. */
+  is_admin: boolean;
   executor_units: ExecutorUnitMembership[];
 }

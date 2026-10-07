@@ -26,10 +26,26 @@ import {
   validationErrors,
 } from "./use-work-order-action";
 
+/** OK / TDK toggle options; solid semantic tones when selected. */
 export const CLEARANCE_SEGMENTS = [
-  { value: "ok" as const, label: "OK", activeClassName: "bg-emerald-600 text-white" },
-  { value: "not_ok" as const, label: "TDK", activeClassName: "bg-red-600 text-white" },
+  { value: "ok" as const, label: "OK", activeClassName: "bg-success text-success-on-solid shadow-sm" },
+  { value: "not_ok" as const, label: "TDK", activeClassName: "bg-danger text-danger-on-solid shadow-sm" },
 ];
+
+const ACCEPTANCE_OPTIONS = [
+  {
+    value: "yes",
+    label: "Ya, diterima",
+    icon: ThumbsUp,
+    active: "border-success bg-success-soft text-success-foreground ring-1 ring-success",
+  },
+  {
+    value: "no",
+    label: "Tidak",
+    icon: ThumbsDown,
+    active: "border-danger bg-danger-soft text-danger-foreground ring-1 ring-danger",
+  },
+] as const;
 
 interface AcceptDialogProps {
   wo: WorkOrderDetail;
@@ -87,23 +103,18 @@ function AcceptForm({ wo, onDone }: { wo: WorkOrderDetail; onDone: () => void })
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <div>
-        <p className="mb-2 text-sm font-medium">Apakah pekerjaan sudah selesai dan dapat diterima?</p>
-        <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              { value: "yes", label: "Ya, diterima", icon: ThumbsUp, active: "border-emerald-600 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-600" },
-              { value: "no", label: "Tidak", icon: ThumbsDown, active: "border-red-600 bg-red-50 text-red-800 ring-1 ring-red-600" },
-            ] as const
-          ).map((option) => {
+      <fieldset>
+        <legend className="mb-2 text-sm font-medium">Apakah pekerjaan sudah selesai dan dapat diterima?</legend>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-invalid={!!errorFor("acceptance") || undefined}>
+          {ACCEPTANCE_OPTIONS.map((option) => {
             const Icon = option.icon;
             const checked = acceptance === option.value;
             return (
               <label
                 key={option.value}
                 className={cn(
-                  "flex cursor-pointer items-center justify-center gap-2 rounded-lg border bg-card p-3 text-sm font-semibold shadow-sm focus-within:ring-2 focus-within:ring-ring hover:bg-muted/50",
-                  checked && option.active,
+                  "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border bg-card p-3 text-sm font-semibold shadow-sm transition-[background-color,border-color,color,box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+                  checked ? option.active : "hover:bg-surface-2",
                 )}
               >
                 <input
@@ -121,18 +132,18 @@ function AcceptForm({ wo, onDone }: { wo: WorkOrderDetail; onDone: () => void })
           })}
         </div>
         <FieldError className="mt-1.5" message={errorFor("acceptance")} />
-      </div>
+      </fieldset>
 
       {acceptance === "yes" ? (
         <>
           <div className="space-y-2">
             <p className="text-sm font-medium">Maintenance clearance (konfirmasi user)</p>
-            <ul className="divide-y rounded-md border">
+            <ul className="divide-y rounded-lg border">
               {items.map((item) => (
                 <li key={item.item_no} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
                   <div className="min-w-0">
                     <p className="text-sm">
-                      {item.item_no}. {item.item_label}
+                      <span className="tabular">{item.item_no}.</span> {item.item_label}
                     </p>
                     {item.mtc_result ? (
                       <p className="text-xs text-muted-foreground">MTC: {CLEARANCE_LABELS[item.mtc_result]}</p>
@@ -159,24 +170,27 @@ function AcceptForm({ wo, onDone }: { wo: WorkOrderDetail; onDone: () => void })
           >
             <Input
               id="breakdown-hours"
+              name="total_breakdown_hours"
               type="number"
               inputMode="decimal"
               min={0}
               step="0.25"
+              className="tabular"
               value={breakdown}
               onChange={(event) => setBreakdown(event.target.value)}
               invalid={!!errorFor("total_breakdown_hours")}
             />
           </Field>
 
-          <Field label="Remarks" htmlFor="accept-remarks" error={errorFor("remarks")}>
+          <Field label="Remarks" htmlFor="accept-remarks" error={errorFor("remarks")} hint="Opsional.">
             <Textarea
               id="accept-remarks"
+              name="remarks"
               value={remarks}
               onChange={(event) => setRemarks(event.target.value)}
               rows={3}
               maxLength={1000}
-              placeholder="Catatan tambahan (opsional)"
+              placeholder="Catatan tambahan…"
             />
           </Field>
         </>
@@ -186,6 +200,7 @@ function AcceptForm({ wo, onDone }: { wo: WorkOrderDetail; onDone: () => void })
         <Field label="Alasan tidak diterima" htmlFor="reject-reason" required error={errorFor("reason")}>
           <Textarea
             id="reject-reason"
+            name="reason"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={4}
@@ -231,7 +246,7 @@ export function AcceptDialog({ wo, open, onOpenChange }: AcceptDialogProps) {
         <DialogHeader>
           <DialogTitle>Konfirmasi Penerimaan</DialogTitle>
           <DialogDescription>
-            Periksa hasil pekerjaan {wo.wo_number} sebelum memberikan konfirmasi.
+            Periksa hasil pekerjaan <span className="font-mono">{wo.wo_number}</span> sebelum memberikan konfirmasi.
           </DialogDescription>
         </DialogHeader>
         {open ? <AcceptForm wo={wo} onDone={() => onOpenChange(false)} /> : null}

@@ -13,7 +13,7 @@ import { useExecutorStaff } from "@/hooks/use-lookups";
 import { ApiError } from "@/lib/api";
 import { DEFAULT_CLEARANCE_ITEMS } from "@/lib/constants";
 import { completeWorkOrder, updateLabours, updateMaterials } from "@/lib/work-orders";
-import type { ClearanceResult, CompletePayload, MaterialInput, WorkOrderDetail } from "@/types/work-order";
+import type { ClearanceResult, CompletePayload, WorkOrderDetail } from "@/types/work-order";
 import { CLEARANCE_SEGMENTS } from "./accept-dialog";
 import {
   LaboursEditor,
@@ -26,20 +26,12 @@ import {
 import {
   MaterialsEditor,
   materialRowsFrom,
+  toMaterialInputs,
   validateMaterialRows,
   type MaterialField,
   type MaterialRow,
 } from "./materials-editor";
 import { firstError, useWorkOrderAction, validationErrors } from "./use-work-order-action";
-
-function toMaterialInputs(rows: MaterialRow[]): MaterialInput[] {
-  return rows.map((row) => ({
-    material_id: row.material_id,
-    material_name: row.material_name.trim(),
-    quantity: Number(row.quantity),
-    unit: row.unit.trim() || null,
-  }));
-}
 
 function prefixed(errors: Record<string, string>, prefix: string): Record<string, string> {
   return Object.fromEntries(Object.entries(errors).map(([key, value]) => [`${prefix}.${key}`, value]));
@@ -154,9 +146,9 @@ export const CompletePanel = React.forwardRef<HTMLDivElement, CompletePanelProps
   return (
     <Card ref={ref} id="selesaikan" className="scroll-mt-20 border-primary/40 ring-1 ring-primary/20">
       <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 border-b">
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <CardTitle className="flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-primary" aria-hidden />
+            <ClipboardCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
             Selesaikan Pekerjaan
           </CardTitle>
           <CardDescription>
@@ -164,13 +156,16 @@ export const CompletePanel = React.forwardRef<HTMLDivElement, CompletePanelProps
             Tekan &quot;Selesai&quot; bila pekerjaan sudah tuntas.
           </CardDescription>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Tutup panel" disabled={busy}>
+        <Button variant="ghost" size="icon" className="-mr-2 -mt-1 shrink-0" onClick={onClose} aria-label="Tutup panel" disabled={busy}>
           <X />
         </Button>
       </CardHeader>
       <CardContent className="space-y-6 pt-4 sm:pt-5">
         {wo.rework_count > 0 ? (
-          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-warning-foreground"
+          >
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
               WO ini dikembalikan pemohon ({wo.rework_count}x). Lihat alasannya di bagian Riwayat sebelum
@@ -179,14 +174,21 @@ export const CompletePanel = React.forwardRef<HTMLDivElement, CompletePanelProps
           </div>
         ) : null}
 
-        <Field label="Pekerjaan perbaikan selesai" htmlFor="work_done" required error={errorFor("work_done")}>
+        <Field
+          label="Pekerjaan perbaikan selesai"
+          htmlFor="work_done"
+          required
+          error={errorFor("work_done")}
+          hint={`${workDone.length}/2000 karakter.`}
+        >
           <Textarea
             id="work_done"
+            name="work_done"
             value={workDone}
             onChange={(event) => setWorkDone(event.target.value)}
             rows={4}
             maxLength={2000}
-            placeholder="Uraikan pekerjaan yang telah dilakukan..."
+            placeholder="Contoh: Ganti kabel power, bersihkan head printer, uji cetak OK…"
             disabled={busy}
             invalid={!!errorFor("work_done")}
           />
@@ -213,11 +215,11 @@ export const CompletePanel = React.forwardRef<HTMLDivElement, CompletePanelProps
 
         <section className="space-y-2">
           <SubHeading>Maintenance clearance (konfirmasi MTC)</SubHeading>
-          <ul className="divide-y rounded-md border">
+          <ul className="divide-y rounded-lg border">
             {clearanceItems.map((item) => (
               <li key={item.item_no} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
                 <span className="text-sm">
-                  {item.item_no}. {item.item_label}
+                  <span className="tabular">{item.item_no}.</span> {item.item_label}
                 </span>
                 <Segmented
                   name={`mtc-clearance-${item.item_no}`}
@@ -233,14 +235,15 @@ export const CompletePanel = React.forwardRef<HTMLDivElement, CompletePanelProps
           <FieldError message={errorFor("clearance", "clearance.*")} />
         </section>
 
-        <Field label="Remarks" htmlFor="complete-remarks" error={errorFor("remarks")}>
+        <Field label="Remarks" htmlFor="complete-remarks" error={errorFor("remarks")} hint="Opsional.">
           <Textarea
             id="complete-remarks"
+            name="remarks"
             value={remarks}
             onChange={(event) => setRemarks(event.target.value)}
             rows={3}
             maxLength={1000}
-            placeholder="Catatan tambahan (opsional)"
+            placeholder="Catatan tambahan, contoh: perlu pemantauan 1 minggu…"
             disabled={busy}
           />
         </Field>
@@ -248,7 +251,7 @@ export const CompletePanel = React.forwardRef<HTMLDivElement, CompletePanelProps
         {serverSummary ? (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+            className="flex items-start gap-2 rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm text-danger-foreground"
           >
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>{serverSummary}</span>

@@ -2,9 +2,11 @@
 
 namespace App\Notifications;
 
+use App\Models\PmTask;
 use App\Models\ServiceRequest;
 use App\Models\WorkOrder;
 use App\Notifications\Channels\ExpoPushChannel;
+use App\Notifications\Concerns\NotifiesByMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -15,7 +17,7 @@ use Illuminate\Notifications\Notification;
  */
 class DocumentNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use NotifiesByMail, Queueable;
 
     public function __construct(
         public string $event,
@@ -29,7 +31,12 @@ class DocumentNotification extends Notification implements ShouldQueue
 
     public function via($notifiable): array
     {
-        return ['database', ExpoPushChannel::class];
+        return array_merge(['database', ExpoPushChannel::class], $this->mailChannels($notifiable));
+    }
+
+    public function documentUrl(): string
+    {
+        return $this->documentPath($this->documentType, $this->documentId);
     }
 
     public function toArray($notifiable): array
@@ -61,6 +68,7 @@ class DocumentNotification extends Notification implements ShouldQueue
             'document_id' => $this->documentId,
             'work_order_id' => $this->documentType === WorkOrder::MORPH_ALIAS ? $this->documentId : null,
             'service_request_id' => $this->documentType === ServiceRequest::MORPH_ALIAS ? $this->documentId : null,
+            'pm_task_id' => $this->documentType === PmTask::MORPH_ALIAS ? $this->documentId : null,
         ];
     }
 }

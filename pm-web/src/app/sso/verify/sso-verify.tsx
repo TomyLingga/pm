@@ -13,6 +13,25 @@ import { loginWithSso } from "@/lib/auth";
 import { PORTAL_APP_ID, PORTAL_HOME_URL, PORTAL_LAUNCH_URL } from "@/lib/env";
 import { queryKeys } from "@/lib/query-keys";
 
+/** "Memverifikasi sesi…" card, also used as the route's Suspense fallback. */
+export function SsoVerifying() {
+  return (
+    <PublicShell>
+      <Card>
+        <CardContent className="flex flex-col items-center gap-5 p-6 text-center sm:p-8" role="status" aria-live="polite">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft text-primary-soft-foreground">
+            <Spinner className="h-6 w-6" />
+          </span>
+          <div className="space-y-1.5">
+            <h1 className="text-lg font-semibold tracking-tight">Memverifikasi sesi…</h1>
+            <p className="text-sm text-muted-foreground">Mohon tunggu sebentar.</p>
+          </div>
+        </CardContent>
+      </Card>
+    </PublicShell>
+  );
+}
+
 export function SsoVerify() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,7 +49,7 @@ export function SsoVerify() {
     const appId = searchParams.get("appId") || fromUrl.get("appId") || PORTAL_APP_ID || null;
 
     if (!token) {
-      setError("Token SSO tidak ditemukan. Silakan buka PM-App melalui Portal INTES.");
+      setError("Token SSO tidak ditemukan. Silakan buka PrevenTech melalui Portal INTES.");
       return;
     }
 
@@ -39,7 +58,7 @@ export function SsoVerify() {
         queryClient.setQueryData(queryKeys.me, me);
         // Remove the token from the address bar/history before navigating.
         window.history.replaceState(null, "", window.location.pathname);
-        router.replace("/work-orders");
+        router.replace("/dashboard");
       })
       .catch((err: unknown) => {
         window.history.replaceState(null, "", window.location.pathname);
@@ -49,30 +68,24 @@ export function SsoVerify() {
 
   const portalUrl = PORTAL_LAUNCH_URL || PORTAL_HOME_URL;
 
+  if (!error) return <SsoVerifying />;
+
   return (
     <PublicShell>
-      <Card>
-        <CardContent className="flex flex-col items-center gap-4 py-10 text-center sm:py-10">
-          {error ? (
-            <>
-              <ShieldAlert className="h-10 w-10 text-destructive" aria-hidden />
-              <div>
-                <h1 className="text-lg font-semibold">Autentikasi gagal</h1>
-                <p className="mt-1 text-sm text-muted-foreground">{error}</p>
-              </div>
-              {portalUrl ? (
-                <Button onClick={() => (window.location.href = portalUrl)}>Kembali ke Portal</Button>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <Spinner className="h-8 w-8" />
-              <div>
-                <h1 className="text-lg font-semibold">Memverifikasi sesi...</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Mohon tunggu sebentar.</p>
-              </div>
-            </>
-          )}
+      <Card className="border-danger/30">
+        <CardContent className="flex flex-col items-center gap-5 p-6 text-center sm:p-8" role="alert">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-danger-soft text-danger-foreground">
+            <ShieldAlert className="h-6 w-6" aria-hidden />
+          </span>
+          <div className="space-y-1.5">
+            <h1 className="text-lg font-semibold tracking-tight">Autentikasi gagal</h1>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+          {portalUrl ? (
+            <Button asChild className="w-full sm:w-auto">
+              <a href={portalUrl}>Kembali ke Portal</a>
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
     </PublicShell>

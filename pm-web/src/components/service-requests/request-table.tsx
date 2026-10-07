@@ -9,7 +9,10 @@ import type { ServiceRequestListItem } from "@/types/service-request";
 import { CurrentStepInfo } from "./current-step";
 import { RequestNumber } from "./request-number";
 
-/** Desktop table (md and up). */
+const linkClassName =
+  "inline-flex rounded-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+/** Desktop table (md and up). The whole row opens the detail; the request number is the real link. */
 export function RequestTable({ items }: { items: ServiceRequestListItem[] }) {
   const router = useRouter();
 
@@ -18,12 +21,12 @@ export function RequestTable({ items }: { items: ServiceRequestListItem[] }) {
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="w-[190px]">No. Request</TableHead>
-          <TableHead className="w-[120px]">Tanggal</TableHead>
+          <TableHead className="w-[130px]">Tanggal</TableHead>
           <TableHead>Keperluan</TableHead>
           <TableHead className="w-[170px]">Pelaksana / Jenis</TableHead>
           <TableHead className="w-[110px]">Office</TableHead>
-          <TableHead className="w-[95px]">Prioritas</TableHead>
-          <TableHead className="w-[140px]">Status</TableHead>
+          <TableHead className="w-[100px]">Prioritas</TableHead>
+          <TableHead className="w-[150px]">Status</TableHead>
           <TableHead className="w-[180px]">Langkah saat ini</TableHead>
         </TableRow>
       </TableHeader>
@@ -33,32 +36,32 @@ export function RequestTable({ items }: { items: ServiceRequestListItem[] }) {
           return (
             <TableRow key={request.id} className="cursor-pointer" onClick={() => router.push(href)}>
               <TableCell>
-                <Link
-                  href={href}
-                  className="text-primary hover:underline"
-                  onClick={(event) => event.stopPropagation()}
-                >
+                <Link href={href} className={linkClassName} onClick={(event) => event.stopPropagation()}>
                   <RequestNumber number={request.request_number} />
                 </Link>
                 {request.revision_no > 0 ? (
-                  <p className="mt-1 text-[11px] text-muted-foreground">Revisi ke-{request.revision_no}</p>
+                  <p className="tabular mt-1 text-[11px] text-muted-foreground">Revisi ke-{request.revision_no}</p>
                 ) : null}
               </TableCell>
-              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+              <TableCell className="tabular whitespace-nowrap text-xs text-muted-foreground">
                 {formatDateTime(request.submitted_at ?? request.created_at)}
               </TableCell>
               <TableCell>
-                <p className="line-clamp-2 font-medium">{request.purpose}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="line-clamp-2 break-words font-medium">{request.purpose}</p>
+                <p className="mt-0.5 line-clamp-1 break-words text-xs text-muted-foreground">
                   {request.requester.name}
                   {request.requester_sub_bagian_name ? ` - ${request.requester_sub_bagian_name}` : ""}
                 </p>
               </TableCell>
               <TableCell>
-                <p className="text-sm font-medium">{request.executor_unit.display_name}</p>
-                <p className="text-xs text-muted-foreground">{request.service_category?.name ?? "-"}</p>
+                <p className="line-clamp-1 break-words text-sm font-medium">{request.executor_unit.display_name}</p>
+                <p className="line-clamp-1 break-words text-xs text-muted-foreground">
+                  {request.service_category?.name ?? "-"}
+                </p>
               </TableCell>
-              <TableCell className="text-sm">{request.office?.name ?? "-"}</TableCell>
+              <TableCell>
+                <p className="line-clamp-2 break-words text-sm">{request.office?.name ?? "-"}</p>
+              </TableCell>
               <TableCell>
                 <PriorityBadge priority={request.priority} label={request.priority_label} />
               </TableCell>

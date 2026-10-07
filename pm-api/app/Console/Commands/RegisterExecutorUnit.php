@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ExecutorUnit;
 use App\Models\OrgUnit;
+use App\Services\Org\ServiceCategoryService;
 use Illuminate\Console\Command;
 
 /**
@@ -14,9 +15,9 @@ use Illuminate\Console\Command;
 class RegisterExecutorUnit extends Command
 {
     protected $signature = 'pm:executor-unit
-        {org_code : Kode unit organisasi Portal (seksi pelaksana)}
-        {--code= : Kode untuk nomor WO/REQ (default = kode unit)}
-        {--display= : Nama tampilan (default = nama unit)}
+        {org_code : Kode unit organisasi Portal (harus seksi)}
+        {--code= : Kode untuk nomor WO/REQ (default = kode seksi tanpa awalan SEK-)}
+        {--display= : Nama tampilan (default = nama seksi)}
         {--category=* : Kategori layanan; "Lain-lain" ditambahkan otomatis}
         {--rules= : Petunjuk dan Aturan Form Request (pisahkan baris dengan |)}
         {--footer= : Teks kontak di kaki Form Request}';
@@ -31,12 +32,18 @@ class RegisterExecutorUnit extends Command
 
             return self::FAILURE;
         }
+        if ($orgUnit->type !== OrgUnit::TYPE_SEKSI) {
+            $this->error("Unit pelaksana harus berupa seksi; {$orgUnit->name} adalah {$orgUnit->type}. Pimpinan sub bagian/bagian di atas seksi otomatis menjadi pimpinan unit pelaksana.");
 
+            return self::FAILURE;
+        }
+
+        $existing = ExecutorUnit::withTrashed()->where('org_unit_id', $orgUnit->id)->first();
         $unit = ExecutorUnit::withTrashed()->updateOrCreate(
             ['org_unit_id' => $orgUnit->id],
             [
-                'code' => $this->option('code') ?: $orgUnit->code,
-                'display_name' => $this->option('display') ?: $orgUnit->name,
+                'code' => $this->option('code') ?: ($existing?->code ?? ServiceCategoryService::codeFromOrgCode($orgUnit->code)),
+                'display_name' => $this->option('display') ?: ($existing?->display_name ?? $orgUnit->name),
                 'is_active' => true,
             ]
         );
@@ -51,16 +58,28 @@ class RegisterExecutorUnit extends Command
         }
         $unit->save();
 
-        $categories = array_values(array_unique(array_merge($this->option('category'), ['Lain-lain'])));
-        foreach ($categories as $i => $name) {
-            $category = $unit->categories()->withTrashed()->updateOrCreate(
-                ['name' => $name],
-                ['sort_order' => $i, 'requires_note' => $name === 'Lain-lain', 'is_active' => true]
-            );
+        // New categories are appended; existing ones keep their order. "Lain-lain" always exists and stays last.
+        foreach (array_unique($this->option('category')) as $name) {
+            $category = $unit->categories()->withTrashed()->firstOrNew(['name' => $name]);
+            if (! $category->exists) {
+                $category->sort_order = (int) $unit->categories()->withTrashed()->where('name', '!=', ServiceCategoryService::OTHER)->max('sort_order') + 1;
+            }
+            $category->is_active = true;
+            $category->save();
             if ($category->trashed()) {
                 $category->restore();
             }
         }
+        $other = $unit->categories()->withTrashed()->firstOrNew(['name' => ServiceCategoryService::OTHER]);
+        $other->fill([
+            'requires_note' => true,
+            'is_active' => true,
+            'sort_order' => (int) $unit->categories()->withTrashed()->where('name', '!=', ServiceCategoryService::OTHER)->max('sort_order') + 1,
+        ])->save();
+        if ($other->trashed()) {
+            $other->restore();
+        }
+        $categories = $unit->categories()->where('is_active', true)->orderBy('sort_order')->pluck('name')->all();
 
         $this->info("Unit pelaksana {$unit->display_name} ({$unit->code}) siap dengan kategori: ".implode(', ', $categories));
 

@@ -45,6 +45,19 @@ return [
         ],
     ],
 
+    // Preventive Maintenance scheduler
+    'preventive' => [
+        // A task becomes JATUH_TEMPO (and the PIC is reminded) this long before due_at. 48 = H-2, 72 = H-3.
+        'due_window_hours' => (int) env('PM_DUE_WINDOW_HOURS', 48),
+        // Overdue tasks are re-announced at this interval.
+        'overdue_reminder_hours' => (int) env('PM_OVERDUE_REMINDER_HOURS', 48),
+        // How far ahead pm:generate-tasks creates tasks.
+        'horizon_days' => (int) env('PM_HORIZON_DAYS', 60),
+        'horizon_days_hourly' => (int) env('PM_HORIZON_DAYS_HOURLY', 7),
+        'max_task_photos' => 10,
+        'max_item_photos' => 5,
+    ],
+
     'attachments' => [
         'disk' => env('PM_ATTACHMENT_DISK', 'local'),
         'max_files' => 10,
@@ -54,6 +67,22 @@ return [
 
     // Public web URL used inside QR codes on printed documents.
     'web_url' => rtrim(env('PM_WEB_URL', env('APP_URL', 'http://localhost:3000')), '/'),
+
+    'notifications' => [
+        // E-mail is an optional extra channel (Q-26 chose push + alarm); off unless SMTP is configured.
+        'mail' => (bool) env('PM_MAIL_NOTIFICATIONS', false),
+    ],
+
+    'live_board' => [
+        // PM tasks still TERJADWAL whose due time is within this many hours show on the live board
+        'upcoming_hours' => (int) env('PM_LIVE_UPCOMING_HOURS', 48),
+    ],
+
+    'dashboard' => [
+        // Aggregates are cached per (user, scope, filters) for this many seconds (0 = no cache).
+        'cache_seconds' => (int) env('PM_DASHBOARD_CACHE_SECONDS', 300),
+        'max_period_days' => 366,
+    ],
 
     'push' => [
         'expo_url' => env('EXPO_PUSH_URL', 'https://exp.host/--/api/v2/push/send'),

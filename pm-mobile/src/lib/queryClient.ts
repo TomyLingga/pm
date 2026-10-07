@@ -41,4 +41,10 @@ export const queryKeys = {
   offices: ['offices'] as const,
   requestExecutorUnits: ['executor-units', 'request'] as const,
   mySuperior: ['my-superior'] as const,
+  // Preventive maintenance
+  pmTasks: ['pm-tasks'] as const,
+  pmTask: (id: number) => ['pm-task', id] as const,
+  pmSummary: ['pm-summary'] as const,
+  equipmentDetail: (id: number) => ['equipment-detail', id] as const,
+  equipmentHistory: (id: number) => ['equipment-history', id] as const,
 };

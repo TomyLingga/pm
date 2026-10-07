@@ -154,6 +154,17 @@ class WorkOrder extends Model
         return $this->morphMany(DocumentSignature::class, 'signable')->orderBy('id');
     }
 
+    /** PM task (and checklist item) whose "Tidak OK" finding raised this Work Order. */
+    public function pmTask(): BelongsTo
+    {
+        return $this->belongsTo(PmTask::class);
+    }
+
+    public function pmTaskItem(): BelongsTo
+    {
+        return $this->belongsTo(PmTaskItem::class);
+    }
+
     public function sourceServiceRequest(): BelongsTo
     {
         return $this->belongsTo(ServiceRequest::class, 'source_service_request_id')->withTrashed();

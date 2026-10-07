@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { PeriodFields, PeriodHint } from "@/components/common/period-fields";
 import { SearchBox } from "@/components/common/search-box";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useExecutorUnits } from "@/hooks/use-lookups";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "@/lib/constants";
+import { WO_FINAL_STATUSES, defaultPeriod, periodApplies } from "@/lib/list-period";
 import { cn } from "@/lib/utils";
 import type { ListFilters } from "./use-list-params";
 
@@ -22,31 +23,37 @@ interface WorkOrderFiltersProps {
 export function WorkOrderFilters({ filters, activeFilterCount, onChange, onReset }: WorkOrderFiltersProps) {
   const [expanded, setExpanded] = React.useState(false);
   const executorUnits = useExecutorUnits();
+  const fallback = React.useMemo(() => defaultPeriod(), []);
+  const showPeriod = periodApplies(filters.status, WO_FINAL_STATUSES);
 
   const selectedUnit = executorUnits.data?.find((unit) => String(unit.id) === filters.executor_unit_id);
   const categories = selectedUnit?.categories ?? [];
 
   return (
-    <div className="space-y-3 rounded-lg border bg-card p-3 shadow-sm sm:p-4">
+    <div className="panel space-y-3 p-3 sm:p-4">
       <div className="flex gap-2">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <SearchBox
             value={filters.q}
             onCommit={(q) => onChange({ q })}
-            placeholder="Cari no WO, permintaan, atau alat..."
+            placeholder="Cari no WO, permintaan, atau alat…"
+            aria-label="Cari Work Order"
           />
         </div>
         <Button
           variant="outline"
-          className="lg:hidden"
+          className="shrink-0 lg:hidden"
           onClick={() => setExpanded((open) => !open)}
           aria-expanded={expanded}
           aria-controls="wo-filter-panel"
+          aria-label={activeFilterCount > 0 ? `Filter, ${activeFilterCount} aktif` : "Filter"}
         >
           <SlidersHorizontal />
           <span className="hidden sm:inline">Filter</span>
           {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{activeFilterCount}</span>
+            <span className="tabular rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-5 text-primary-foreground">
+              {activeFilterCount}
+            </span>
           ) : null}
         </Button>
       </div>
@@ -91,7 +98,7 @@ export function WorkOrderFilters({ filters, activeFilterCount, onChange, onReset
             onChange={(e) => onChange({ executor_unit_id: e.target.value, service_category_id: "" })}
             disabled={executorUnits.isPending}
           >
-            <option value="">Semua</option>
+            <option value="">{executorUnits.isPending ? "Memuat…" : "Semua"}</option>
             {executorUnits.data?.map((unit) => (
               <option key={unit.id} value={String(unit.id)}>
                 {unit.display_name}
@@ -100,13 +107,16 @@ export function WorkOrderFilters({ filters, activeFilterCount, onChange, onReset
           </Select>
         </Field>
 
-        <Field label="Kategori" htmlFor="filter-category">
+        <Field
+          label="Kategori"
+          htmlFor="filter-category"
+          hint={selectedUnit ? undefined : "Pilih unit pelaksana terlebih dahulu."}
+        >
           <Select
             id="filter-category"
             value={filters.service_category_id}
             onChange={(e) => onChange({ service_category_id: e.target.value })}
             disabled={!selectedUnit}
-            title={selectedUnit ? undefined : "Pilih unit pelaksana terlebih dahulu"}
           >
             <option value="">{selectedUnit ? "Semua" : "Pilih unit dulu"}</option>
             {categories.map((category) => (
@@ -117,25 +127,14 @@ export function WorkOrderFilters({ filters, activeFilterCount, onChange, onReset
           </Select>
         </Field>
 
-        <Field label="Dari tanggal" htmlFor="filter-from">
-          <Input
-            id="filter-from"
-            type="date"
-            value={filters.issued_from}
-            max={filters.issued_to || undefined}
-            onChange={(e) => onChange({ issued_from: e.target.value })}
+        {showPeriod ? (
+          <PeriodFields
+            idPrefix="filter"
+            from={filters.from || fallback.from}
+            to={filters.to || fallback.to}
+            onChange={onChange}
           />
-        </Field>
-
-        <Field label="Sampai tanggal" htmlFor="filter-to">
-          <Input
-            id="filter-to"
-            type="date"
-            value={filters.issued_to}
-            min={filters.issued_from || undefined}
-            onChange={(e) => onChange({ issued_to: e.target.value })}
-          />
-        </Field>
+        ) : null}
 
         <div className="flex items-end">
           <Button
@@ -149,6 +148,11 @@ export function WorkOrderFilters({ filters, activeFilterCount, onChange, onReset
           </Button>
         </div>
       </div>
+      <PeriodHint
+        visible={showPeriod}
+        finished="WO yang sudah closed, dibatalkan, atau dialihkan"
+        running="WO yang masih berjalan (diajukan, diterima, dikerjakan, selesai)"
+      />
     </div>
   );
 }

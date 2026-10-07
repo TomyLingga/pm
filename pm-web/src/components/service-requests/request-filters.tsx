@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { PeriodFields, PeriodHint } from "@/components/common/period-fields";
 import { SearchBox } from "@/components/common/search-box";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useExecutorUnits, useOffices } from "@/hooks/use-lookups";
 import { SR_PRIORITY_OPTIONS, SR_STATUS_OPTIONS } from "@/lib/constants";
+import { REQUEST_FINAL_STATUSES, defaultPeriod, periodApplies } from "@/lib/list-period";
 import { cn } from "@/lib/utils";
 import type { RequestFilters as Filters } from "./use-request-list-params";
 
@@ -23,31 +24,38 @@ export function RequestFilters({ filters, activeFilterCount, onChange, onReset }
   const [expanded, setExpanded] = React.useState(false);
   const executorUnits = useExecutorUnits("request");
   const offices = useOffices();
+  const fallback = React.useMemo(() => defaultPeriod(), []);
+  const showPeriod = periodApplies(filters.status, REQUEST_FINAL_STATUSES);
 
   const selectedUnit = executorUnits.data?.find((unit) => String(unit.id) === filters.executor_unit_id);
   const categories = selectedUnit?.categories ?? [];
+  const canReset = activeFilterCount > 0 || !!filters.q;
 
   return (
-    <div className="space-y-3 rounded-lg border bg-card p-3 shadow-sm sm:p-4">
+    <div className="panel space-y-3 p-3 sm:p-4">
       <div className="flex gap-2">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <SearchBox
             value={filters.q}
             onCommit={(q) => onChange({ q })}
-            placeholder="Cari nomor request atau keperluan..."
+            placeholder="Cari nomor request atau keperluan…"
+            aria-label="Cari Form Request"
           />
         </div>
         <Button
-          variant="outline"
-          className="xl:hidden"
+          variant={expanded ? "secondary" : "outline"}
+          className="shrink-0 xl:hidden"
           onClick={() => setExpanded((open) => !open)}
           aria-expanded={expanded}
           aria-controls="sr-filter-panel"
         >
-          <SlidersHorizontal />
-          <span className="hidden sm:inline">Filter</span>
+          <SlidersHorizontal aria-hidden />
+          <span className="sr-only sm:not-sr-only">Filter</span>
           {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{activeFilterCount}</span>
+            <span className="tabular inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+              {activeFilterCount}
+              <span className="sr-only"> filter aktif</span>
+            </span>
           ) : null}
         </Button>
       </div>
@@ -92,7 +100,7 @@ export function RequestFilters({ filters, activeFilterCount, onChange, onReset }
             onChange={(e) => onChange({ executor_unit_id: e.target.value, service_category_id: "" })}
             disabled={executorUnits.isPending}
           >
-            <option value="">Semua</option>
+            <option value="">{executorUnits.isPending ? "Memuat…" : "Semua"}</option>
             {executorUnits.data?.map((unit) => (
               <option key={unit.id} value={String(unit.id)}>
                 {unit.display_name}
@@ -124,7 +132,7 @@ export function RequestFilters({ filters, activeFilterCount, onChange, onReset }
             onChange={(e) => onChange({ office_id: e.target.value })}
             disabled={offices.isPending}
           >
-            <option value="">Semua</option>
+            <option value="">{offices.isPending ? "Memuat…" : "Semua"}</option>
             {offices.data?.map((office) => (
               <option key={office.id} value={String(office.id)}>
                 {office.name}
@@ -133,33 +141,27 @@ export function RequestFilters({ filters, activeFilterCount, onChange, onReset }
           </Select>
         </Field>
 
-        <Field label="Dari tanggal" htmlFor="sr-filter-from">
-          <Input
-            id="sr-filter-from"
-            type="date"
-            value={filters.from}
-            max={filters.to || undefined}
-            onChange={(e) => onChange({ from: e.target.value })}
+        {showPeriod ? (
+          <PeriodFields
+            idPrefix="sr-filter"
+            from={filters.from || fallback.from}
+            to={filters.to || fallback.to}
+            onChange={onChange}
           />
-        </Field>
-
-        <Field label="Sampai tanggal" htmlFor="sr-filter-to">
-          <Input
-            id="sr-filter-to"
-            type="date"
-            value={filters.to}
-            min={filters.from || undefined}
-            onChange={(e) => onChange({ to: e.target.value })}
-          />
-        </Field>
+        ) : null}
 
         <div className="flex items-end">
-          <Button variant="ghost" className="w-full" onClick={onReset} disabled={activeFilterCount === 0 && !filters.q}>
-            <RotateCcw />
+          <Button variant="ghost" className="w-full" onClick={onReset} disabled={!canReset}>
+            <RotateCcw aria-hidden />
             Reset filter
           </Button>
         </div>
       </div>
+      <PeriodHint
+        visible={showPeriod}
+        finished="request yang sudah selesai, ditolak, dibatalkan, atau dialihkan"
+        running="request yang masih berjalan (draft, menunggu atasan/divisi, diproses)"
+      />
     </div>
   );
 }

@@ -36,6 +36,7 @@ class MeResource extends JsonResource
             'bagian' => $unit?->ancestorOfType(OrgUnit::TYPE_BAGIAN)?->name,
             'sub_bagian' => $unit?->ancestorOfType(OrgUnit::TYPE_SUB_BAGIAN)?->name,
             'roles' => $this->getRoleNames()->values(),
+            'is_admin' => $this->resource->isAdmin(),
             'executor_units' => $directory->unitsFor($this->resource)->map(fn (ExecutorUnit $u) => [
                 'id' => $u->id,
                 'code' => $u->code,

@@ -43,7 +43,7 @@ function rejectOversized(files: PickedFile[]): PickedFile[] {
 export async function takePhoto(): Promise<PickedFile[]> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Izin kamera diperlukan', 'Aktifkan izin kamera untuk PM-App di pengaturan perangkat.', [
+    Alert.alert('Izin kamera diperlukan', 'Aktifkan izin kamera untuk PrevenTech di pengaturan perangkat.', [
       { text: 'Batal', style: 'cancel' },
       { text: 'Buka Pengaturan', onPress: () => void Linking.openSettings() },
     ]);
@@ -124,11 +124,10 @@ export function choosePhotoSource(limit: number): Promise<PickedFile[]> {
 
 type Uploader = (file: UploadFile, collection: AttachmentCollection) => Promise<unknown>;
 
-/** Uploads files one by one; returns the number of failures. */
-export async function uploadFiles(
-  upload: Uploader,
+/** Uploads files one by one through `upload`; returns the number of failures. */
+export async function uploadEach(
   files: PickedFile[],
-  collection: AttachmentCollection | ((file: PickedFile) => AttachmentCollection),
+  upload: (file: UploadFile, picked: PickedFile) => Promise<unknown>,
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ failed: number; firstError?: unknown }> {
   let failed = 0;
@@ -136,9 +135,8 @@ export async function uploadFiles(
   for (let i = 0; i < files.length; i++) {
     onProgress?.(i, files.length);
     const f = files[i];
-    const c = typeof collection === 'function' ? collection(f) : collection;
     try {
-      await upload({ uri: f.uri, name: f.name, type: f.type }, c);
+      await upload({ uri: f.uri, name: f.name, type: f.type }, f);
     } catch (e) {
       failed++;
       firstError ??= e;
@@ -146,6 +144,20 @@ export async function uploadFiles(
   }
   onProgress?.(files.length, files.length);
   return { failed, firstError };
+}
+
+/** Uploads files that need a `collection` (work orders, Form Requests). */
+export function uploadFiles(
+  upload: Uploader,
+  files: PickedFile[],
+  collection: AttachmentCollection | ((file: PickedFile) => AttachmentCollection),
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ failed: number; firstError?: unknown }> {
+  return uploadEach(
+    files,
+    (file, picked) => upload(file, typeof collection === 'function' ? collection(picked) : collection),
+    onProgress,
+  );
 }
 
 /** Work order photos. */

@@ -94,6 +94,8 @@ class WorkOrderController extends Controller
             'equipment_id' => ['nullable', 'integer'],
             'issued_from' => ['nullable', 'date_format:Y-m-d'],
             'issued_to' => ['nullable', 'date_format:Y-m-d'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'q' => ['nullable', 'string', 'max:100'],
             'sort' => ['nullable', 'in:-issued_at,issued_at,-priority'],
         ]);

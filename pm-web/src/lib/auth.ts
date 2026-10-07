@@ -37,6 +37,26 @@ export function isExecutorStaff(me: Me | undefined): boolean {
   return (me?.executor_units?.length ?? 0) > 0;
 }
 
+/** The only elevated role: sees every unit's documents and manages access. */
+export function isAdmin(me: Me | undefined): boolean {
+  return me?.is_admin === true || hasGlobalRole(me, "admin");
+}
+
+/** Preventive Maintenance (and the equipment master) is for executor staff and admins. */
+export function canAccessPm(me: Me | undefined): boolean {
+  return isExecutorStaff(me) || isAdmin(me);
+}
+
+/** Executor units where the user is the lead (may write templates/schedules/equipment). */
+export function leadUnits(me: Me | undefined) {
+  return (me?.executor_units ?? []).filter((unit) => unit.is_lead);
+}
+
+/** Lead of at least one unit, or admin. */
+export function canManagePm(me: Me | undefined): boolean {
+  return isAdmin(me) || leadUnits(me).length > 0;
+}
+
 /** Most specific organisation label for the user ("Pengadaan"). */
 export function orgUnitLabel(me: Me | undefined): string {
   if (!me) return "";

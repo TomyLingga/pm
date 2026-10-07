@@ -11,16 +11,17 @@ use Illuminate\Validation\ValidationException;
 
 class AttachmentService
 {
-    public function store(Model $owner, UploadedFile $file, string $collection, User $uploader): Attachment
+    public function store(Model $owner, UploadedFile $file, string $collection, User $uploader, ?int $max = null): Attachment
     {
-        $max = config('pm.attachments.max_files');
+        $max ??= (int) config('pm.attachments.max_files');
         $count = Attachment::query()
             ->where('attachable_type', $owner->getMorphClass())
             ->where('attachable_id', $owner->getKey())
             ->count();
 
         if ($count >= $max) {
-            throw ValidationException::withMessages(['file' => ["Maksimal {$max} lampiran per dokumen."]]);
+            $scope = $owner instanceof \App\Models\PmTaskItem ? 'butir' : 'dokumen';
+            throw ValidationException::withMessages(['file' => ["Maksimal {$max} lampiran per {$scope}."]]);
         }
 
         $disk = config('pm.attachments.disk');

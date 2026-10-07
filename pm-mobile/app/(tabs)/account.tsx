@@ -89,7 +89,7 @@ export default function AccountScreen() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert('Keluar', 'Keluar dari PM-App di perangkat ini? Notifikasi tidak akan diterima lagi.', [
+    Alert.alert('Keluar', 'Keluar dari PrevenTech di perangkat ini? Notifikasi tidak akan diterima lagi.', [
       { text: 'Batal', style: 'cancel' },
       {
         text: 'Keluar',
@@ -244,7 +244,7 @@ export default function AccountScreen() {
         />
       )}
       <Button title="Keluar" icon="log-out-outline" variant="dangerOutline" onPress={confirmSignOut} loading={signingOut} />
-      <Text style={styles.version}>PM-App INL v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+      <Text style={styles.version}>PrevenTech v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
     </View>
   );
 

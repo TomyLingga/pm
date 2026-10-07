@@ -18,6 +18,8 @@ interface ReasonModalProps {
   confirmVariant?: ButtonVariant;
   hint?: string;
   placeholder?: string;
+  /** Text prefilled each time the modal opens (e.g. the technician's skip proposal). */
+  initialValue?: string;
   /** Extra controls rendered above the text field (e.g. an executor picker). */
   children?: React.ReactNode;
 }
@@ -36,6 +38,7 @@ export function ReasonModal({
   confirmVariant = 'danger',
   hint,
   placeholder,
+  initialValue = '',
   children,
 }: ReasonModalProps) {
   const [reason, setReason] = useState('');
@@ -43,9 +46,11 @@ export function ReasonModal({
 
   useEffect(() => {
     if (visible) {
-      setReason('');
+      setReason(initialValue);
       setError(undefined);
     }
+    // Only reset when the modal opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const submit = () => {

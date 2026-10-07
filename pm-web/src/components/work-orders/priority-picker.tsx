@@ -5,16 +5,17 @@ import { cn } from "@/lib/utils";
 
 type Priority = "high" | "medium" | "low";
 
+/** Same tones as `PriorityBadge` (common/badges.tsx): danger / warning / neutral. */
 const ACTIVE_STYLES: Record<Priority, string> = {
-  high: "border-red-500 bg-red-50 ring-1 ring-red-500",
-  medium: "border-amber-500 bg-amber-50 ring-1 ring-amber-500",
-  low: "border-slate-500 bg-slate-50 ring-1 ring-slate-500",
+  high: "border-danger bg-danger-soft text-danger-foreground ring-1 ring-danger",
+  medium: "border-warning bg-warning-soft text-warning-foreground ring-1 ring-warning",
+  low: "border-muted-foreground/60 bg-surface-2 text-foreground ring-1 ring-muted-foreground/60",
 };
 
 const DOT_STYLES: Record<Priority, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-slate-400",
+  high: "bg-danger",
+  medium: "bg-warning",
+  low: "bg-muted-foreground/60",
 };
 
 interface PriorityPickerProps {
@@ -51,9 +52,9 @@ export function PriorityPicker({
           <label
             key={option.value}
             className={cn(
-              "flex cursor-pointer flex-col gap-1 rounded-lg border bg-card p-3 text-left shadow-sm transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted/50",
-              checked && ACTIVE_STYLES[option.value],
-              invalid && !checked && "border-destructive",
+              "flex min-h-10 cursor-pointer flex-col gap-1 rounded-md border bg-card p-3 text-left shadow-sm transition-[background-color,border-color,color,box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background",
+              checked ? ACTIVE_STYLES[option.value] : "hover:bg-surface-2",
+              invalid && !checked && "border-danger",
               disabled && "cursor-not-allowed opacity-60",
             )}
           >
@@ -67,7 +68,7 @@ export function PriorityPicker({
               className="sr-only"
             />
             <span className="flex items-center gap-2 text-sm font-semibold">
-              <span className={cn("h-2.5 w-2.5 rounded-full", DOT_STYLES[option.value])} aria-hidden />
+              <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", DOT_STYLES[option.value])} aria-hidden />
               {option.label}
             </span>
             {compact ? null : (

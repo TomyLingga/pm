@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fieldClassName, invalidFieldClassName } from "./input";
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   invalid?: boolean;
@@ -14,11 +15,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <select
         ref={ref}
         aria-invalid={invalid || undefined}
-        className={cn(
-          "flex h-10 w-full appearance-none rounded-md border border-input bg-card py-2 pl-3 pr-9 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm",
-          invalid && "border-destructive focus-visible:ring-destructive",
-          className,
-        )}
+        className={cn("flex h-10 appearance-none py-2 pl-3 pr-9", fieldClassName, invalid && invalidFieldClassName, className)}
         {...props}
       >
         {children}

@@ -6,7 +6,7 @@ import { LoadingView } from '@/components/ui';
 
 export default function Index() {
   const { status, isExecutor } = useAuth();
-  if (status === 'loading') return <LoadingView message="Memuat PM-App…" />;
+  if (status === 'loading') return <LoadingView message="Memuat PrevenTech…" />;
   if (status === 'signedOut') return <Redirect href="/login" />;
-  return <Redirect href={isExecutor ? '/pool' : '/mine'} />;
+  return <Redirect href={isExecutor ? '/work' : '/mine'} />;
 }
