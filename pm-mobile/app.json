@@ -15,7 +15,13 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "id.co.inl.pmapp"
+      "bundleIdentifier": "id.co.inl.pmapp",
+      "buildNumber": "4",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PrevenTech memerlukan akses kamera untuk memotret kondisi alat/pekerjaan pada Work Order dan Form Request.",
+        "NSPhotoLibraryUsageDescription": "PrevenTech memerlukan akses galeri untuk melampirkan foto pada Work Order dan Form Request.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "id.co.inl.pmapp",

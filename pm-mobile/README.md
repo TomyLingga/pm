@@ -83,11 +83,23 @@ pengujian internal; untuk Play Store pakai EAS atau keystore sendiri).
 
 ### iPhone
 
-Tidak ada build iOS tanpa Mac atau EAS. Pilihan:
+Tidak ada build iOS dari Windows tanpa EAS (cloud build Expo). Dua pilihan:
 1. **Expo Go** di iPhone (App Store, versi SDK 52): `npx expo start`, pindai QR dengan kamera. Cukup untuk menguji
    seluruh alur (login, WO, PM, approval); push tidak tersedia di Expo Go iOS.
-2. **EAS build iOS** (`npx eas-cli@16 build --platform ios --profile preview`): membutuhkan akun Apple Developer
-   (berbayar) dan perangkat terdaftar / TestFlight. Tidak memerlukan Mac karena build berjalan di cloud EAS.
+2. **EAS build iOS** (`npm run build:ios`, profil `preview` di `eas.json`): build berjalan di cloud EAS, tidak perlu Mac.
+   Syarat dan langkah sekali saja:
+   - akun Expo (gratis) → `npx eas-cli@16 login`, lalu `npx eas-cli@16 init` mengisi `expo.extra.eas.projectId` di `app.json`
+     (projectId yang sama dipakai push Android, lihat §3);
+   - akun **Apple Developer Program** (berbayar, atas nama perusahaan) untuk sertifikat dan profil provisioning;
+     EAS membuatnya otomatis saat build pertama (login Apple ID diminta di terminal);
+   - daftarkan iPhone penguji: `npm run eas:devices` (tautan/QR dibuka di iPhone, UDID tercatat), lalu build ulang agar
+     profil ad-hoc memuat perangkat itu. Maksimal 100 perangkat per tahun.
+   Hasil: halaman build di expo.dev dengan tombol *Install* (buka di Safari iPhone yang terdaftar) dan file `.ipa` yang bisa
+   diunduh. Tautan halaman build itulah yang diisi admin di web (Pengaturan > Aplikasi Mobile) sebagai tautan iPhone;
+   file `.ipa` di Google Drive tidak bisa dipasang langsung dari Safari. Untuk penguji lebih luas pakai TestFlight:
+   `npx eas-cli@16 submit --platform ios` (profil `submit.production` di `eas.json`, isi Apple ID / Team ID).
+   `npm run build:ios:simulator` menghasilkan build untuk Simulator iOS (hanya berguna di Mac).
+   Versi iOS mengikuti `expo.version` dan `expo.ios.buildNumber` di `app.json` (naikkan `buildNumber` tiap build).
 
 ### Android lewat Expo Go
 

@@ -7,6 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   CalendarCheck2,
+  Smartphone,
   CalendarClock,
   CalendarDays,
   ChevronRight,
@@ -152,6 +153,13 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Hak Akses",
         icon: ShieldCheck,
         isActive: (path) => isUnder(path, "/settings/access"),
+        visible: isAdmin,
+      },
+      {
+        href: "/settings/mobile-app",
+        label: "Aplikasi Mobile",
+        icon: Smartphone,
+        isActive: (path) => isUnder(path, "/settings/mobile-app"),
         visible: isAdmin,
       },
     ],

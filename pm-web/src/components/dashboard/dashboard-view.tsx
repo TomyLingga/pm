@@ -16,6 +16,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { MonitorPlay } from "lucide-react";
+import { AppDownloadCard } from "./app-download-card";
 import { DashboardFilters } from "./dashboard-filters";
 import { LiveBoard } from "./live-board";
 import { KpiTiles } from "./kpi-tiles";
@@ -135,6 +136,8 @@ export function DashboardView() {
       />
 
       <DashboardFilters params={params} availableScopes={data?.available_scopes ?? []} activeScope={data?.scope} />
+
+      <AppDownloadCard />
 
       <LiveBoard scope={params.apiParams.scope} />
 

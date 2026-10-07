@@ -75,6 +75,8 @@ php artisan queue:work        # bila QUEUE_CONNECTION=database/redis (disarankan
 - **Peran pelaksana** diturunkan otomatis. Unit pelaksana = seksi. Staf = user di seksi itu (atau turunannya)
   + user bergrade pimpinan di sub bagian dan bagian di atas seksi (Kasubag/Kabag) + anggota tambahan
   (`executor_unit_members`); pimpinan = staf bergrade `PM_LEAD_GRADE_CODES` (default BOM, BOM-1, BOM-2, BOM-3), teknisi = BOM-4.
+- **Tautan unduhan aplikasi mobile**: `GET/PUT /app-downloads` (tabel `app_settings`, key `app_downloads`), diatur admin,
+  tampil di dashboard web.
 - **Admin pertama**: `php artisan db:seed` (`AdminSeeder`) membuat baris pengguna Tomy (NRK 121110304) ber-role admin; profil
   lengkapnya terisi saat ia login lewat Portal (dicocokkan lewat NRK). Alternatif: `PM_BOOTSTRAP_ADMIN_NRKS` di `.env`
   (role diberikan saat login) atau `php artisan pm:make-admin <NRK> [--revoke]`; selanjutnya lewat menu Hak Akses.

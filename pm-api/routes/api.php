@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AttachmentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ChecklistTemplateController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\AppDownloadController;
 use App\Http\Controllers\Api\V1\DailyActivityController;
 use App\Http\Controllers\Api\V1\ServiceCategoryController;
 use App\Http\Controllers\Api\V1\UserAccessController;
@@ -148,6 +149,8 @@ Route::prefix('v1')->group(function () {
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::get('notifications/preferences', [NotificationController::class, 'preferences']);
         Route::put('notifications/preferences', [NotificationController::class, 'updatePreferences']);
+        Route::get('app-downloads', [AppDownloadController::class, 'show']);
+        Route::put('app-downloads', [AppDownloadController::class, 'update']);
         Route::get('dashboard', [DashboardController::class, 'show']);
         Route::get('dashboard/live', [DashboardController::class, 'live']);
 

@@ -39,7 +39,7 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 ## Struktur
 - `pm-api/` backend Laravel · `pm-web/` frontend Next.js · `pm-mobile/` aplikasi Android Expo · `docs/` desain
 - Kontrak API yang mengikat ketiganya (perbarui bila endpoint berubah): `docs/API_WORK_ORDER.md` (Modul A),
-  `docs/API_SERVICE_REQUEST.md` (Modul B), `docs/API_PM.md` (Modul C), `docs/API_DASHBOARD.md` (dashboard & preferensi notifikasi),
+  `docs/API_SERVICE_REQUEST.md` (Modul B), `docs/API_PM.md` (Modul C), `docs/API_DASHBOARD.md` (dashboard, preferensi notifikasi, tautan unduhan aplikasi mobile),
   `docs/API_PROGRAM_ACTIVITY.md` (Program Kerja Tahunan & Aktivitas Harian)
 
 ## Perintah

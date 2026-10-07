@@ -82,4 +82,7 @@ export const queryKeys = {
   pmTaskSummary: ["pm-tasks", "summary"] as const,
   pmCalendars: ["pm-tasks", "calendar"] as const,
   pmCalendar: (params: CalendarParams) => ["pm-tasks", "calendar", params] as const,
+
+  /* ---------- Tautan unduhan aplikasi mobile ---------- */
+  appDownloads: ["app-downloads"] as const,
 };

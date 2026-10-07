@@ -10,7 +10,11 @@
     "export:android": "expo export --platform android",
     "ios": "expo run:ios",
     "prebuild:android": "expo prebuild --platform android --clean",
-    "build:apk": "node scripts/build-apk.js"
+    "build:apk": "node scripts/build-apk.js",
+    "build:ios": "npx eas-cli@16 build --platform ios --profile preview",
+    "build:ios:simulator": "npx eas-cli@16 build --platform ios --profile preview-simulator",
+    "build:android:eas": "npx eas-cli@16 build --platform android --profile preview",
+    "eas:devices": "npx eas-cli@16 device:create"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",
