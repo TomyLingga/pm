@@ -47,7 +47,7 @@ export function DetailHeader({ wo }: { wo: WorkOrderDetail }) {
             </Button>
           ) : null}
           <Button asChild variant="outline" className="flex-1 sm:flex-none">
-            <a href={workOrderPdfUrl(wo.id)} target="_blank" rel="noopener noreferrer">
+            <a href={workOrderPdfUrl(wo.id)} target="_blank" rel="noopener">
               <Printer />
               Cetak PDF
             </a>

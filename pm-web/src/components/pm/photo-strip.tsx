@@ -145,7 +145,7 @@ export function PhotoStrip({
                 <a
                   href={url}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener"
                   className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                   title={attachment.original_name}
                   aria-label={`Buka ${attachment.original_name}`}

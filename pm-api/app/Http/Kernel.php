@@ -41,6 +41,8 @@ class Kernel extends HttpKernel
 
         'api' => [
             \App\Http\Middleware\ForceJsonResponse::class,
+            // Must run before Sanctum: PDF/attachment links opened without a Referer still use the session cookie.
+            \App\Http\Middleware\StatefulWithoutReferer::class,
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,

@@ -207,7 +207,7 @@ export function AttachmentsPanel({
                       <a
                         href={url}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                         className="block bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
                         {attachment.mime_type.startsWith("image/") ? (

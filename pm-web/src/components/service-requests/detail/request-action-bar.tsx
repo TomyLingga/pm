@@ -165,7 +165,7 @@ export function RequestActionBar({ request }: { request: ServiceRequestDetail })
         </Button>
       ) : null}
       <Button asChild variant="outline">
-        <a href={serviceRequestPdfUrl(request.id)} target="_blank" rel="noopener noreferrer">
+        <a href={serviceRequestPdfUrl(request.id)} target="_blank" rel="noopener">
           <Printer aria-hidden />
           Cetak PDF
         </a>

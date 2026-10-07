@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Http\Middleware\StatefulWithoutReferer;
 use App\Models\OrgUnit;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -109,6 +111,35 @@ class WebSsoLoginTest extends TestCase
         Http::fake(['portal.test/*' => Http::response('oops', 500)]);
 
         $this->postJson('/api/v1/auth/sso', ['token' => 't'], $this->spaHeaders)->assertStatus(503);
+    }
+
+    public function test_links_opened_without_referer_still_use_the_session_cookie(): void
+    {
+        Http::fake(['portal.test/api/sso/verify' => $this->portalOk($this->portalProfile())]);
+        $login = $this->postJson('/api/v1/auth/sso', ['token' => 't'], $this->spaHeaders)->assertOk();
+        // The response cookie is encrypted; the test client encrypts cookies itself, so pass the plain session id.
+        $sessionId = CookieValuePrefix::remove(decrypt($login->getCookie('pm_app_session', false)->getValue(), false));
+        // Each browser request is a fresh PHP process: drop the in-memory guard and session state the test app keeps,
+        // so only a session that StartSession re-loads from the cookie can authenticate.
+        $fresh = function () {
+            $this->app['auth']->forgetGuards();
+            $this->app['session']->driver()->flush();
+        };
+
+        // A new browser tab (PDF, attachment, pasted URL): session cookie, no Referer / Origin
+        $fresh();
+        // (JSON test requests only carry cookies with withCredentials())
+        $this->withCredentials()->withCookie('pm_app_session', $sessionId)->getJson('/api/v1/auth/me')->assertOk()->assertJsonPath('data.nrk', '119090170');
+
+        // Root cause: without StatefulWithoutReferer, Sanctum ignores the session cookie when there is no Referer
+        $fresh();
+        $this->withoutMiddleware(StatefulWithoutReferer::class)
+            ->withCredentials()->withCookie('pm_app_session', $sessionId)->getJson('/api/v1/auth/me')->assertUnauthorized();
+
+        // Without the cookie it is still a guest
+        $fresh();
+        $this->defaultCookies = [];
+        $this->getJson('/api/v1/auth/me')->assertUnauthorized();
     }
 
     public function test_logout_ends_the_web_session(): void
