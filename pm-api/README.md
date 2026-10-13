@@ -49,7 +49,7 @@ pada DB kosong dibuat organisasi demo. Tidak mengirim notifikasi. Untuk mengulan
 
 Equipment dikelola pimpinan unit lewat API/web (`/equipment`), lokasi bisa ditambah cepat dari form equipment.
 Material masih diisi lewat seeder/SQL (UI master data lengkap & import Excel menyusul).
-Admin pertama: `php artisan tinker` → `App\Models\User::where('nrk','...')->first()->assignRole('admin')`; admin berikutnya diatur lewat menu Pengaturan > Hak Akses di web.
+Admin pertama: `php artisan db:seed` (AdminSeeder) atau `php artisan pm:make-admin <NRK>`; admin berikutnya diatur lewat menu Pengaturan > Hak Akses di web.
 
 ## Deploy produksi
 

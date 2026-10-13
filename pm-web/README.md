@@ -34,7 +34,7 @@ cp .env.example .env.local   # lalu sesuaikan nilainya
 
 | Variabel | Wajib | Keterangan |
 |---|---|---|
-| `BACKEND_URL` | ya | Target proxy `/api/*` dan `/sanctum/*` (Laravel). Default `http://127.0.0.1:8000`. Di Docker mis. `http://pm-be:8000`. **Dibaca saat `next build` dan saat `next dev` dimulai** (rewrites ikut ter-*bake* ke hasil build). |
+| `BACKEND_URL` | ya | Target proxy `/api/*` dan `/sanctum/*` (Laravel). Default `http://127.0.0.1:8000`. Di produksi (`docker-compose.prod.yml`) nginx meneruskan `/api`, `/sanctum`, `/storage` langsung ke php-fpm `pm-api`, sehingga rewrite ini tidak dipakai dan Dockerfile mengisinya dengan nilai dummy. **Dibaca saat `next build` dan saat `next dev` dimulai** (rewrites ikut ter-*bake* ke hasil build). |
 | `NEXT_PUBLIC_PORTAL_APP_ID` | ya | UUID PrevenTech di tabel `aplikasi` Portal. Dipakai sebagai `app_id` bila URL dari Portal tidak membawa `appId`. |
 | `NEXT_PUBLIC_PORTAL_LAUNCH_URL` | ya | URL launch Portal untuk aplikasi ini, mis. `https://portal.inl.co.id/launch?app_id=<uuid>`. Tujuan redirect bila belum login / sesi habis (401). Bila kosong, pengguna diarahkan ke `/akses-ditolak`. |
 | `NEXT_PUBLIC_PORTAL_HOME_URL` | ya | Beranda Portal; tujuan setelah logout. |
@@ -50,7 +50,7 @@ npx tsc --noEmit   # cek tipe
 npm run build      # build produksi (tidak butuh backend berjalan)
 ```
 
-Build memakai `output: "standalone"` (untuk container `pm-fe`). Menjalankan hasil build:
+Build memakai `output: "standalone"` (untuk container `pm-web`). Menjalankan hasil build:
 
 ```bash
 npm run build
@@ -171,9 +171,14 @@ src/
       approvals/                Menunggu Persetujuan Saya
       pm/                       tasks (daftar, [id] form checklist), calendar, schedules, templates
       equipment/                daftar + [id] riwayat maintenance
-      dashboard/                dashboard KPI + grafik
+      programs/                 Program Kerja Tahunan: daftar, [id] detail (sub-item, kegiatan, PIC)
+      activities/               Aktivitas Harian (daftar, tambah/ubah, import/export Excel)
+      dashboard/                dashboard KPI + grafik + live board + kartu unduh aplikasi mobile
       settings/notifications/   preferensi notifikasi
       settings/categories/      kategori layanan per seksi
+      settings/access/          hak akses admin (admin)
+      settings/mobile-app/      tautan unduhan aplikasi mobile (admin)
+    (kiosk)/monitor/            papan monitor untuk TV (tanpa sidebar)
     sso/verify/                 penukaran token SSO
     verifikasi/[token]/         verifikasi QR publik
     akses-ditolak/
@@ -192,10 +197,14 @@ src/
     equipment/                  daftar, dialog form (+ lokasi inline), detail, riwayat maintenance
     dashboard/                  filter (lingkup/periode/unit/kategori/lokasi), ubin KPI, kartu grafik + tooltip,
                                 grafik WO / request / PM / equipment (Recharts, dimuat dinamis tanpa SSR), tabel
-    settings/                   preferensi notifikasi (saklar email)
+    programs/                   kartu program, tabel kegiatan, dialog sub-item/kegiatan/status/progress, riwayat
+    activities/                 filter status/minggu/PIC, tabel & kartu aktivitas, dialog tambah/ubah/status
+    settings/                   preferensi notifikasi (saklar email), hak akses, aplikasi mobile
+    theme/                      ThemeProvider + tombol terang/gelap/sistem
   hooks/                        useMe, lookup, state list di URL, aksi dokumen, approvals, PM, debounce, object URL
   lib/                          api client, endpoint helper (auth, work-orders, service-requests, approvals, pm-*,
-                                dashboard, lookups, attachments, notifications, public), validasi 422,
+                                work-programs, daily-activities, dashboard, app-downloads, access, categories,
+                                lookups, attachments, notifications, public), validasi 422, periode daftar (list-period),
                                 format tanggal/Rupiah, warna grafik (chart-colors), kompresi foto (image)
   types/                        tipe TypeScript sesuai kontrak API
 ```
