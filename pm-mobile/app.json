@@ -3,7 +3,7 @@
     "name": "PrevenTech",
     "slug": "pm-app-inl",
     "scheme": "pmapp",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -25,7 +25,7 @@
     },
     "android": {
       "package": "id.co.inl.pmapp",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ebe6dc"
