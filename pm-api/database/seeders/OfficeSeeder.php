@@ -5,7 +5,10 @@ namespace Database\Seeders;
 use App\Models\Office;
 use Illuminate\Database\Seeder;
 
-/** Reference data: offices selectable on the Form Request. */
+/**
+ * Offices for tests and demo data only. Real offices are Portal "Penempatan Area", synced by `portal:sync`
+ * (which takes over an office with the same code and deactivates the others).
+ */
 class OfficeSeeder extends Seeder
 {
     public function run(): void

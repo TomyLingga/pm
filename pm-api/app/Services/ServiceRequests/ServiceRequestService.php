@@ -7,6 +7,7 @@ use App\Enums\ServiceRequestStatus;
 use App\Exceptions\InvalidTransitionException;
 use App\Models\ApprovalStep;
 use App\Models\ExecutorUnit;
+use App\Models\Office;
 use App\Models\OrgUnit;
 use App\Models\ServiceRequest;
 use App\Models\User;
@@ -79,6 +80,7 @@ class ServiceRequestService
                 'requester_org_unit_id' => $requester->org_unit_id,
                 'status' => ServiceRequestStatus::Draft,
                 'superior_id' => $data['superior_id'] ?? $this->defaultSuperior($requester)?->id,
+                'office_id' => $data['office_id'] ?? $this->defaultOffice($requester)?->id,
             ]);
             $request->save();
             $this->logger->log($request, 'create', null, $request->status, $requester);
@@ -315,6 +317,14 @@ class ServiceRequestService
     }
 
     /** Default "Atasan YBS": the requester's own last choice, otherwise Portal's atasan_id. */
+    /** The requester's Portal placement, while it is still a selectable office. */
+    public function defaultOffice(User $requester): ?Office
+    {
+        return $requester->office_id
+            ? Office::query()->whereKey($requester->office_id)->where('is_active', true)->first()
+            : null;
+    }
+
     public function defaultSuperior(User $requester): ?User
     {
         foreach ([$requester->preferred_superior_id, $requester->superior_id] as $candidateId) {

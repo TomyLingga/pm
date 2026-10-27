@@ -89,9 +89,13 @@ export function RequestForm({ initial }: { initial?: ServiceRequestDetail }) {
   useEffect(() => {
     if (units.data?.length === 1 && unitId === null) setUnitId(units.data[0].id);
   }, [units.data, unitId]);
+  // Office: the requester's Portal placement, else the only choice.
+  const myOfficeId = me?.office?.id ?? null;
   useEffect(() => {
-    if (offices.data?.length === 1 && officeId === null) setOfficeId(offices.data[0].id);
-  }, [offices.data, officeId]);
+    if (officeId !== null || !offices.data) return;
+    if (myOfficeId !== null && offices.data.some((o) => o.id === myOfficeId)) setOfficeId(myOfficeId);
+    else if (offices.data.length === 1) setOfficeId(offices.data[0].id);
+  }, [offices.data, officeId, myOfficeId]);
 
   // Confirm before discarding unsaved input.
   useEffect(() => {
@@ -264,6 +268,9 @@ export function RequestForm({ initial }: { initial?: ServiceRequestDetail }) {
             }}
           />
           <FieldError message={errors.office_id} />
+          {myOfficeId !== null && officeId === myOfficeId ? (
+            <Text style={styles.hint}>Sesuai penempatan Anda di Portal.</Text>
+          ) : null}
 
           <FieldLabel required>Divisi Pelaksana</FieldLabel>
           <ChipGroup

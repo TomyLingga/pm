@@ -34,6 +34,7 @@ class User extends Authenticatable
         'grade_code',
         'grade_level',
         'org_unit_id',
+        'office_id',
         'superior_id',
         'preferred_superior_id',
         'photo_url',
@@ -58,6 +59,12 @@ class User extends Authenticatable
     public function orgUnit(): BelongsTo
     {
         return $this->belongsTo(OrgUnit::class);
+    }
+
+    /** Portal "Penempatan Area": the default office of the user's Form Requests. */
+    public function office(): BelongsTo
+    {
+        return $this->belongsTo(Office::class);
     }
 
     /** Superior according to Portal (`atasan_id`). */

@@ -27,7 +27,7 @@ Data organisasi & karyawan berasal dari Portal INTES:
 
 ```bash
 php artisan db:seed                                       # role admin + admin pertama (AdminSeeder: Tomy); satu-satunya seeder bawaan
-php artisan portal:sync                                   # unit organisasi + karyawan (juga terjadwal 02:00)
+php artisan portal:sync                                   # unit organisasi, Penempatan Area (office), karyawan (juga terjadwal 02:00)
 php artisan pm:executor-unit SEK-IT --code=IT \
     --category=Software --category=Hardware --category=Network \
     --rules="1. Bahwa dengan pengesahan diatas, ...|2. Password akan ..." \
@@ -70,7 +70,7 @@ php artisan queue:work        # bila QUEUE_CONNECTION=database/redis (disarankan
 | `approvals:remind` | tiap jam | langkah approval yang menunggu > 24 jam → notifikasi alarm ke approver (diulang tiap 24 jam) |
 | `pm:generate-tasks` | 00:05 | membuat tugas PM dari jadwal aktif sampai horizon (60 hari; 7 hari untuk jadwal per jam). Idempotent: aman dijalankan ulang |
 | `pm:check-overdue` | tiap 15 menit | tugas PM → JATUH_TEMPO / TERLAMBAT, auto-skip, pengingat alarm H-2 · H-0 · overdue (diulang tiap 48 jam) |
-| `portal:sync` | 02:00 | sinkron unit organisasi & karyawan; user yang hilang dari Portal dinonaktifkan |
+| `portal:sync` | 02:00 | sinkron unit organisasi, Penempatan Area (office Form Request) & karyawan; user/office yang hilang dari Portal dinonaktifkan |
 
 ## Aturan bisnis penting
 

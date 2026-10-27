@@ -37,6 +37,8 @@ export interface Me {
   grade_level: number | null;
   photo_url: string | null;
   org_unit: OrgUnit | null;
+  /** Portal "Penempatan Area": preselected office of a new Form Request. */
+  office: { id: number; code: string; name: string; is_active: boolean } | null;
   bagian: string | null;
   sub_bagian: string | null;
   roles: string[];

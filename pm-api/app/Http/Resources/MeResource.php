@@ -33,6 +33,13 @@ class MeResource extends JsonResource
                 'name' => $unit->name,
                 'type' => $unit->type,
             ] : null,
+            // Portal "Penempatan Area": default office of a new Form Request (when still active)
+            'office' => $this->office ? [
+                'id' => $this->office->id,
+                'code' => $this->office->code,
+                'name' => $this->office->name,
+                'is_active' => $this->office->is_active,
+            ] : null,
             'bagian' => $unit?->ancestorOfType(OrgUnit::TYPE_BAGIAN)?->name,
             'sub_bagian' => $unit?->ancestorOfType(OrgUnit::TYPE_SUB_BAGIAN)?->name,
             'roles' => $this->getRoleNames()->values(),

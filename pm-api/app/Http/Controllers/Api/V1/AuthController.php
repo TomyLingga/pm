@@ -48,7 +48,7 @@ class AuthController extends Controller
         }
 
         // 200 even for a first login (the resource would otherwise answer 201 for a new model).
-        return (new MeResource($user->load('orgUnit')))->response()->setStatusCode(200);
+        return (new MeResource($user->load('orgUnit', 'office')))->response()->setStatusCode(200);
     }
 
     /** Mobile: credentials are checked by Portal; returns a non-expiring device token. */
@@ -86,7 +86,7 @@ class AuthController extends Controller
 
     public function me(Request $request): MeResource
     {
-        return new MeResource($request->user()->load('orgUnit'));
+        return new MeResource($request->user()->load('orgUnit', 'office'));
     }
 
     private function mobileResponse(array $result): JsonResponse
@@ -97,7 +97,7 @@ class AuthController extends Controller
 
         return response()->json(['data' => [
             'token' => $result['token'],
-            'user' => new MeResource($result['user']->load('orgUnit')),
+            'user' => new MeResource($result['user']->load('orgUnit', 'office')),
         ]]);
     }
 }

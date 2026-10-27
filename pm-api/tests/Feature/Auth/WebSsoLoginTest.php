@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Http\Middleware\StatefulWithoutReferer;
+use App\Models\Office;
 use App\Models\OrgUnit;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -55,6 +56,30 @@ class WebSsoLoginTest extends TestCase
             && $r['token'] === 'one-time-token'
             && $r['app_id'] === '11111111-1111-1111-1111-111111111111');
         $response->assertCookie('pm_app_session');
+    }
+
+    public function test_the_portal_placement_becomes_the_users_office(): void
+    {
+        $area = fn (string $id, string $code, string $name) => ['penempatanArea' => ['id' => $id, 'kode' => $code, 'nama' => $name, 'latitude' => '3.1', 'longitude' => '99.3']];
+        Http::fake(['portal.test/api/sso/verify' => Http::sequence()
+            ->push(['success' => true, 'data' => $this->portalProfile($area('e39ae5ed-9965-44f4-8d42-3b05682a6f1b', 'HO_SEIMANGKEI', 'Head Office INL Sei Mangkei'))])
+            ->push(['success' => true, 'data' => $this->portalProfile($area('ca59ec54-880a-4e1f-b53b-c07d2ddbca60', 'RO_MEDAN', 'Representative Office Medan'))])
+            ->push(['success' => true, 'data' => $this->portalProfile(['penempatanArea' => null])]),
+        ]);
+
+        // First login: the area does not exist locally yet (portal:sync not run) and is created
+        $this->postJson('/api/v1/auth/sso', ['token' => 't1'], $this->spaHeaders)->assertOk()
+            ->assertJsonPath('data.office.code', 'HO_SEIMANGKEI')
+            ->assertJsonPath('data.office.name', 'Head Office INL Sei Mangkei');
+        $this->assertSame('e39ae5ed-9965-44f4-8d42-3b05682a6f1b', Office::query()->sole()->portal_area_id);
+
+        // Moved to RO Medan in Portal
+        $this->postJson('/api/v1/auth/sso', ['token' => 't2'], $this->spaHeaders)->assertOk()
+            ->assertJsonPath('data.office.code', 'RO_MEDAN');
+
+        // No placement in Portal any more
+        $this->postJson('/api/v1/auth/sso', ['token' => 't3'], $this->spaHeaders)->assertOk()->assertJsonPath('data.office', null);
+        $this->assertSame(2, Office::query()->count());
     }
 
     public function test_profile_is_refreshed_on_every_login(): void

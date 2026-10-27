@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Exceptions\PortalException;
+use App\Models\Office;
 use App\Models\OrgUnit;
 use App\Models\User;
 use Illuminate\Support\Arr;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 /**
- * Upserts the local user (and its org-unit chain) from a Portal `/api/sso/verify` payload.
+ * Upserts the local user (with its org-unit chain and placement office) from a Portal `/api/sso/verify` payload.
  */
 class PortalUserSync
 {
@@ -42,6 +43,7 @@ class PortalUserSync
                 'grade_code' => Arr::get($employee, 'grade.kode'),
                 'grade_level' => Arr::get($employee, 'grade.level'),
                 'org_unit_id' => $orgUnit?->id,
+                'office_id' => Office::fromPortalArea($employee['penempatanArea'] ?? null)?->id,
                 'photo_url' => $employee['fotoProfil'] ?? null,
                 'is_active' => true,
                 'profile_synced_at' => now(),

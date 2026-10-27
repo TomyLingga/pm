@@ -69,6 +69,12 @@ class PortalClient
         return $this->send(fn () => $this->internal()->get('/api/sso/organization-units'));
     }
 
+    /** Master "Penempatan Area": `[{ id, kode, nama, latitude, longitude }]`. */
+    public function placements(): array
+    {
+        return $this->send(fn () => $this->internal()->get('/api/sso/placements'));
+    }
+
     private function http(): PendingRequest
     {
         return Http::baseUrl(config('portal.api_url'))

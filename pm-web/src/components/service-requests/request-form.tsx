@@ -176,6 +176,14 @@ export function RequestForm({ request }: { request?: ServiceRequestDetail }) {
     }
   }, [mySuperior.data, superiorTouched]);
 
+  // Prefill the office from the requester's Portal placement while it is still empty.
+  const myOfficeId = me.office ? String(me.office.id) : "";
+  React.useEffect(() => {
+    if (myOfficeId && offices.data?.some((office) => String(office.id) === myOfficeId)) {
+      setForm((current) => (current.officeId ? current : { ...current, officeId: myOfficeId }));
+    }
+  }, [offices.data, myOfficeId]);
+
   const selectedUnit = executorUnits.data?.find((unit) => String(unit.id) === form.executorUnitId);
   const categories = selectedUnit?.categories ?? [];
   const fileSlots = MAX_ATTACHMENTS - (request?.attachments.length ?? 0);
@@ -344,7 +352,13 @@ export function RequestForm({ request }: { request?: ServiceRequestDetail }) {
           <CardDescription>Isi apa yang diminta, unit yang menangani, dan prioritasnya.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Field label="Office" htmlFor="office_id" required error={errorFor("office_id")}>
+          <Field
+            label="Office"
+            htmlFor="office_id"
+            required
+            error={errorFor("office_id")}
+            hint={myOfficeId && form.officeId === myOfficeId ? "Sesuai penempatan Anda di Portal." : undefined}
+          >
             <Select
               id="office_id"
               name="office_id"

@@ -9,12 +9,16 @@ class SyncPortalDirectory extends Command
 {
     protected $signature = 'portal:sync';
 
-    protected $description = 'Sync organization units and employees from Portal INTES';
+    protected $description = 'Sync organization units, placements (Form Request offices) and employees from Portal INTES';
 
     public function handle(PortalDirectorySync $sync): int
     {
         $result = $sync->sync();
-        $this->info("Unit organisasi: {$result['org_units']}, karyawan: {$result['users']}, dinonaktifkan: {$result['deactivated']}.");
+        $offices = $result['offices'] ?? '-';
+        $this->info("Unit organisasi: {$result['org_units']}, penempatan area: {$offices}, karyawan: {$result['users']}, dinonaktifkan: {$result['deactivated']}.");
+        if ($result['offices_error']) {
+            $this->warn("Penempatan area tidak bisa diambil dari Portal ({$result['offices_error']}); daftar office tidak diubah.");
+        }
 
         return self::SUCCESS;
     }
