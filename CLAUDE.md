@@ -19,7 +19,8 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 - Mobile: aplikasi Android React Native (Expo SDK 52, Node 18) dengan push & alarm, memakai API yang sama
 - Queue & scheduler: Laravel Queue (database/redis) + Laravel Task Scheduling
 - Deploy: Docker Compose di server CentOS — `docker-compose.yml` (pm-web :8099, pm-api `serversideup/php` nginx+fpm :3021,
-  pm-worker, pm-scheduler, pm-db PostgreSQL 17, pm-redis, pm-backup); TLS di reverse proxy server; panduan `docs/DEPLOY.md`
+  pm-worker, pm-scheduler, pm-db PostgreSQL 17, pm-redis, pm-backup); TLS di Apache server (`sudo bash docker/apache/setup-preventech.sh`:
+  vhost + certbot, domain preventech.inl.co.id); panduan `docs/DEPLOY.md`
 
 ## Konvensi
 - Backend = API-only (REST, JSON, prefix /api/v1). Semua logic bisnis di Service class, bukan di Controller.
