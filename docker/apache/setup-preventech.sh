@@ -44,9 +44,11 @@ systemctl reload httpd
 echo "== Hasil"
 certbot certificates -d "$DOMAIN"
 ls -la /etc/httpd/conf.d/preventech*.conf
-# Langsung ke Apache server ini (resolver lokal mungkin masih menyimpan IP lama)
-curl -sI --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/" | grep -iE "^HTTP|^location" || true
-curl -sI --resolve "$DOMAIN:80:127.0.0.1" "http://$DOMAIN/" | grep -iE "^HTTP|^location" || true
+# Langsung ke Apache server ini lewat IP LAN-nya, jalur yang sama dengan trafik dari IP publik (resolver lokal mungkin
+# masih menyimpan IP lama; lewat 127.0.0.1 semua domain dijawab vhost default 403).
+LAN_IP=$(ip -4 route get 1.1.1.1 | sed -n 's/.* src \([0-9.]*\).*/\1/p')
+curl -sSI --resolve "$DOMAIN:443:$LAN_IP" "https://$DOMAIN/" 2>&1 | grep -iE "^HTTP|^location|^curl" || true
+curl -sSI --resolve "$DOMAIN:80:$LAN_IP" "http://$DOMAIN/" 2>&1 | grep -iE "^HTTP|^location|^curl" || true
 echo "== Timer auto-renew"
 systemctl list-timers 'certbot*' --no-pager || crontab -l | grep -i certbot || true
 
