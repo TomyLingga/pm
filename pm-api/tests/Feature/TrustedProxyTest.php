@@ -23,7 +23,7 @@ class TrustedProxyTest extends TestCase
     {
         return $this->withServerVariables(['REMOTE_ADDR' => $remoteAddr])->getJson('/_test/client', [
             'X-Forwarded-For' => '203.0.113.7',
-            'X-Forwarded-Host' => 'pm.inl.co.id',
+            'X-Forwarded-Host' => 'preventech.inl.co.id',
             'X-Forwarded-Proto' => 'https',
             'X-Forwarded-Port' => '8099', // an internal port passed along the proxy chain
         ]);
@@ -34,7 +34,7 @@ class TrustedProxyTest extends TestCase
         $this->viaProxy('172.18.0.5')->assertOk() // pm-web on the Docker network
             ->assertJsonPath('ip', '203.0.113.7')
             ->assertJsonPath('secure', true)
-            ->assertJsonPath('url', 'https://pm.inl.co.id/x');
+            ->assertJsonPath('url', 'https://preventech.inl.co.id/x');
     }
 
     public function test_forwarded_headers_from_an_untrusted_address_are_ignored(): void

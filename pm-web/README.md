@@ -106,7 +106,7 @@ menjadi sesi cookie Laravel Sanctum (SPA).
 Agar sesi cookie berjalan lewat proxy, `pm-api` perlu (lihat `docs/SSO.md` §6):
 
 - `SESSION_COOKIE=pm_app_session` (nama cookie yang dicek middleware)
-- `SANCTUM_STATEFUL_DOMAINS` berisi host pm-web (mis. `pm.inl.co.id`; untuk dev `localhost:3000`)
+- `SANCTUM_STATEFUL_DOMAINS` berisi host pm-web (mis. `preventech.inl.co.id`; untuk dev `localhost:3000`)
 - Sanctum hanya memakai cookie sesi bila request membawa Referer/Origin dari host di atas. Tautan ke API yang dibuka di tab
   baru (PDF, lampiran, foto) jangan memakai `rel="noreferrer"`; untuk URL yang ditempel langsung, middleware
   `StatefulWithoutReferer` di pm-api mengisi Referer pada request GET yang membawa cookie sesi

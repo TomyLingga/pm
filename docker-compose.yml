@@ -3,7 +3,7 @@
 #   git pull && docker compose up -d --build
 #
 # Once, before the first start: pm-api/.env (from pm-api/.env.production.example) and pm-web/.env.local
-# (from pm-web/.env.example). The server's reverse proxy sends the domain (https://pm.inl.co.id) to port 8099;
+# (from pm-web/.env.example). The server's reverse proxy sends the domain (https://preventech.inl.co.id) to port 8099;
 # pm-web proxies /api and /sanctum to pm-api inside the network. Port 3021 is pm-api directly.
 # Guide: docs/DEPLOY.md.
 

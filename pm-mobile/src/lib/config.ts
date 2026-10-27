@@ -1,7 +1,7 @@
 // Runtime configuration. EXPO_PUBLIC_* variables are inlined at bundle time,
 // so they must be referenced statically (no dynamic process.env lookups).
 
-const DEFAULT_API_URL = 'https://pm.inl.co.id/api/v1';
+const DEFAULT_API_URL = 'https://preventech.inl.co.id/api/v1';
 
 function normalizeBaseUrl(raw: string | undefined): string {
   const value = (raw ?? '').trim();
@@ -11,7 +11,7 @@ function normalizeBaseUrl(raw: string | undefined): string {
 /** Base URL including the `/api/v1` prefix, without trailing slash. */
 export const API_URL = normalizeBaseUrl(process.env.EXPO_PUBLIC_PM_API_URL);
 
-/** Scheme + host (+ port) of the API, e.g. `https://pm.inl.co.id`. */
+/** Scheme + host (+ port) of the API, e.g. `https://preventech.inl.co.id`. */
 export const API_ORIGIN = (() => {
   const match = /^(https?:\/\/[^/]+)/i.exec(API_URL);
   return match ? match[1] : API_URL;

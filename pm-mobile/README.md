@@ -33,10 +33,10 @@ cp .env.example .env        # lalu sesuaikan URL API
 `.env`:
 
 ```dotenv
-EXPO_PUBLIC_PM_API_URL=https://pm.inl.co.id/api/v1
+EXPO_PUBLIC_PM_API_URL=https://preventech.inl.co.id/api/v1
 ```
 
-- Wajib berisi prefix `/api/v1`, tanpa `/` di akhir. Bila kosong, aplikasi memakai `https://pm.inl.co.id/api/v1`.
+- Wajib berisi prefix `/api/v1`, tanpa `/` di akhir. Bila kosong, aplikasi memakai `https://preventech.inl.co.id/api/v1`.
 - Variabel `EXPO_PUBLIC_*` di-*inline* saat bundling — setelah mengubah `.env`, restart `npx expo start -c`.
 - Untuk uji dengan backend lokal dari HP, pakai IP LAN komputer (mis. `http://192.168.1.10:8000/api/v1`), bukan
   `localhost`. Build rilis Android memblokir HTTP non-TLS, jadi gunakan HTTPS untuk APK.
@@ -77,7 +77,7 @@ npm run build:apk          # expo prebuild → gradle assembleRelease → dist/P
 
 Butuh `ANDROID_HOME` (SDK + build-tools + NDK) dan JDK 17. Build pertama sekitar 10 menit. Salin APK ke HP dan pasang
 (izinkan "Instal dari sumber tidak dikenal"). `EXPO_PUBLIC_PM_API_URL` dibaca dari `.env` saat build, jadi APK ini
-mengarah ke server yang tertulis di sana; untuk produksi ganti ke `https://pm.inl.co.id/api/v1` lalu build ulang.
+mengarah ke server yang tertulis di sana; untuk produksi ganti ke `https://preventech.inl.co.id/api/v1` lalu build ulang.
 Folder `android/` hasil prebuild dan `dist/` tidak masuk git. APK ditandatangani dengan debug keystore (cukup untuk
 pengujian internal; untuk Play Store pakai EAS atau keystore sendiri).
 

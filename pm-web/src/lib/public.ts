@@ -14,7 +14,7 @@ export function getPublicSignature(token: string, signal?: AbortSignal): Promise
 
 /**
  * Extracts the verification token from a signature `verify_url`
- * (e.g. `https://pm.inl.co.id/verifikasi/abc123` -> `abc123`).
+ * (e.g. `https://preventech.inl.co.id/verifikasi/abc123` -> `abc123`).
  */
 export function tokenFromVerifyUrl(verifyUrl: string | null | undefined): string | null {
   if (!verifyUrl) return null;

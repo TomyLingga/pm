@@ -26,7 +26,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_PM_API_URL": "https://pm.inl.co.id/api/v1"
+        "EXPO_PUBLIC_PM_API_URL": "https://preventech.inl.co.id/api/v1"
       }
     },
     "preview-simulator": {
@@ -41,7 +41,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_PM_API_URL": "https://pm.inl.co.id/api/v1"
+        "EXPO_PUBLIC_PM_API_URL": "https://preventech.inl.co.id/api/v1"
       }
     }
   },
