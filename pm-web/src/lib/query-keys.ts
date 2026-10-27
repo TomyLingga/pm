@@ -85,4 +85,5 @@ export const queryKeys = {
 
   /* ---------- Tautan unduhan aplikasi mobile ---------- */
   appDownloads: ["app-downloads"] as const,
+  mailSettings: ["settings", "mail"] as const,
 };

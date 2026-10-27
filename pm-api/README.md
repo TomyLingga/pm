@@ -109,8 +109,9 @@ php artisan queue:work        # bila QUEUE_CONNECTION=database/redis (disarankan
   otomatis saat kejadian berikutnya jatuh tempo. Butir checklist disalin dari template saat tugas dimulai.
   Hanya pimpinan yang boleh melewati tugas; teknisi mengusulkan. Temuan "Tidak OK" bisa langsung dijadikan WO.
 - Semua perubahan status tercatat di `status_logs`; setiap pengesahan membuat `document_signatures` (QR → `/verifikasi/{token}`).
-- **Notifikasi**: in-app (tabel `notifications`) + push Expo selalu; **email** opsional (`PM_MAIL_NOTIFICATIONS=true` + SMTP
-  `MAIL_*`), dihormati preferensi per user (`users.email_notifications`). Semua dikirim lewat queue.
+- **Notifikasi**: in-app (tabel `notifications`) + push Expo selalu; **email** opsional, SMTP diatur admin di Pengaturan > Email
+  Notifikasi (`App\Services\Settings\MailSettingsService`, `app_settings.mail`; sebelum disimpan memakai `PM_MAIL_NOTIFICATIONS`
+  + `MAIL_*`), dihormati preferensi per user (`users.email_notifications`). Semua dikirim lewat queue.
 - **Dashboard** (`App\Services\Dashboard\DashboardService`): hanya query agregat (GROUP BY, `percentile_cont` untuk median),
   scope mengikuti peran (teknisi → `mine`, pimpinan → `unit`, admin → `all`), hasil di-cache
   `PM_DASHBOARD_CACHE_SECONDS` (default 300) per user/scope/filter.

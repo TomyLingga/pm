@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
 
-/** Admin-editable settings stored as JSON per key (see AppDownloadController for `app_downloads`). */
+/**
+ * Admin-editable settings stored as JSON per key (see AppDownloadController for `app_downloads`,
+ * MailSettingsService for `mail`).
+ */
 class AppSetting extends Model
 {
     public const KEY_APP_DOWNLOADS = 'app_downloads';
+    public const KEY_MAIL = 'mail';
 
     protected $primaryKey = 'key';
 

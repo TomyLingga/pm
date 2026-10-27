@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
+use App\Services\Settings\MailSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -79,7 +80,7 @@ class NotificationController extends Controller
     {
         return [
             'email' => (bool) ($user->email_notifications ?? true),
-            'email_available' => (bool) config('pm.notifications.mail') && filled($user->email),
+            'email_available' => app(MailSettingsService::class)->enabled() && filled($user->email),
         ];
     }
 

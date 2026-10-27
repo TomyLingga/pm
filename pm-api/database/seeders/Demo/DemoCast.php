@@ -203,9 +203,10 @@ class DemoCast
     private function createDemoOrganisation(): void
     {
         $this->createdDemoOrganisation = true;
+        // "(Demo)" keeps these apart from the same-named Portal units synced later on SSO login.
         $unit = fn (string $code, string $name, string $type, ?OrgUnit $parent = null) => OrgUnit::query()->firstOrCreate(
             ['code' => $code],
-            ['portal_unit_id' => (string) Str::uuid(), 'name' => $name, 'type' => $type, 'parent_id' => $parent?->id, 'is_active' => true],
+            ['portal_unit_id' => (string) Str::uuid(), 'name' => $name.' (Demo)', 'type' => $type, 'parent_id' => $parent?->id, 'is_active' => true],
         );
 
         $tek = $unit('BAG-DEMO-TEK', 'Teknik', OrgUnit::TYPE_BAGIAN);

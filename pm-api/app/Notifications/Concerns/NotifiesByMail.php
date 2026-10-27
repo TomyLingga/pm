@@ -6,11 +6,13 @@ use App\Models\PmTask;
 use App\Models\ServiceRequest;
 use App\Models\WorkOrder;
 use App\Models\WorkProgram;
+use App\Services\Settings\MailSettingsService;
 use Illuminate\Notifications\Messages\MailMessage;
 
 /**
  * Optional e-mail channel for document notifications (PRD §7). Off by default (Q-26: push + alarm);
- * enabled with PM_MAIL_NOTIFICATIONS=true and honouring the user's `email_notifications` preference.
+ * enabled by an admin in Pengaturan > Email Notifikasi (or PM_MAIL_NOTIFICATIONS=true until that is saved,
+ * see MailSettingsService) and honouring the user's `email_notifications` preference.
  *
  * Expects the using class to expose public `$title`, `$body` and `documentUrl()`.
  */
@@ -19,7 +21,7 @@ trait NotifiesByMail
     /** @return string[] `['mail']` when the e-mail channel applies to this recipient */
     protected function mailChannels($notifiable): array
     {
-        $wanted = config('pm.notifications.mail')
+        $wanted = app(MailSettingsService::class)->enabled()
             && filled($notifiable->email ?? null)
             && ($notifiable->email_notifications ?? true);
 

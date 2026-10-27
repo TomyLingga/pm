@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Mail, Smartphone } from "lucide-react";
 import { ErrorState } from "@/components/common/states";
@@ -10,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
 import { errorMessage } from "@/lib/api";
+import { isAdmin } from "@/lib/auth";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/lib/notifications";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -124,7 +126,16 @@ export function NotificationPreferences() {
                 available
                   ? `Ke ${me.email ?? "email akun Portal Anda"}. Berisi judul, isi, dan tombol "Buka" ke dokumen.`
                   : me.email
-                    ? "Kanal email belum diaktifkan di server oleh admin."
+                    ? isAdmin(me)
+                      ? (
+                          <>
+                            Kanal email belum diaktifkan.{" "}
+                            <Link href="/settings/mail" className="font-medium text-primary underline-offset-2 hover:underline">
+                              Atur di Email Notifikasi
+                            </Link>
+                          </>
+                        )
+                      : "Kanal email belum diaktifkan di server oleh admin."
                     : "Akun Anda tidak memiliki alamat email di Portal."
               }
               control={

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\UserAccessController;
 use App\Http\Controllers\Api\V1\WorkProgramController;
 use App\Http\Controllers\Api\V1\EquipmentController;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\MailSettingsController;
 use App\Http\Controllers\Api\V1\PmScheduleController;
 use App\Http\Controllers\Api\V1\PmTaskController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -151,6 +152,9 @@ Route::prefix('v1')->group(function () {
         Route::put('notifications/preferences', [NotificationController::class, 'updatePreferences']);
         Route::get('app-downloads', [AppDownloadController::class, 'show']);
         Route::put('app-downloads', [AppDownloadController::class, 'update']);
+        Route::get('settings/mail', [MailSettingsController::class, 'show']);
+        Route::put('settings/mail', [MailSettingsController::class, 'update']);
+        Route::post('settings/mail/test', [MailSettingsController::class, 'test'])->middleware('throttle:10,1');
         Route::get('dashboard', [DashboardController::class, 'show']);
         Route::get('dashboard/live', [DashboardController::class, 'live']);
 
