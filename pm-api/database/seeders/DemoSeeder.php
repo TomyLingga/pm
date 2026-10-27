@@ -114,7 +114,7 @@ class DemoSeeder extends Seeder
         }
 
         $this->report();
-        $this->call(WorkProgramDemoSeeder::class);
+        $this->call(WorkProgramDemoSeeder::class, false, ['cast' => $this->cast]);
     }
 
     // ── Timeline ──────────────────────────────────────────────────────────────
@@ -633,6 +633,13 @@ class DemoSeeder extends Seeder
             [0, fn ($c) => $this->newRequest($c, 'mtc', $r3, 'Mechanical', 'Perbaikan AC ruang meeting pabrik.', 'medium', null, 'PBK')],
             [5, fn ($c) => $this->submit($c)],
             [180, fn ($c) => $this->requests->approve($c->sr, $c->superior)],
+        ]);
+        // Revision requested by the division lead, not resubmitted yet (back to the requester as a draft)
+        $this->story($this->day(3, '13:00'), [
+            [0, fn ($c) => $this->newRequest($c, 'mtc', $r1, 'Fabrikasi', 'Pengecatan ulang dinding kantor pabrik.', 'low', 6000000, 'PBK')],
+            [5, fn ($c) => $this->submit($c)],
+            [150, fn ($c) => $this->requests->approve($c->sr, $c->superior)],
+            [1500, fn ($c) => $this->requests->requestRevision($c->sr, $lead, 'Lengkapi luas area (m²) dan pilihan warna cat.')],
         ]);
         // Rejected by the division lead
         $this->story($this->day(18, '10:00'), [

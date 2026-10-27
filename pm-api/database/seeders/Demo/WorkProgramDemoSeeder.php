@@ -3,31 +3,28 @@
 namespace Database\Seeders\Demo;
 
 use App\Models\DailyActivity;
-use App\Models\ExecutorUnit;
 use App\Models\OrgUnit;
 use App\Models\User;
 use App\Models\WorkProgram;
 use App\Services\Activities\DailyActivityService;
-use App\Services\Org\ExecutorDirectory;
 use App\Services\Programs\WorkProgramService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Program Kerja Tahunan + Aktivitas Harian demo data for the IT and Maintenance units
- * (called by DemoSeeder; safe to run alone after the units exist).
+ * Program Kerja Tahunan + Aktivitas Harian demo data for the IT and Maintenance units of the demo cast
+ * (called by DemoSeeder with its cast; safe to run alone after DemoSeeder).
  */
 class WorkProgramDemoSeeder extends Seeder
 {
     public function __construct(
         private WorkProgramService $programs,
         private DailyActivityService $activities,
-        private ExecutorDirectory $directory,
     ) {
     }
 
-    public function run(): void
+    public function run(?DemoCast $cast = null): void
     {
         if (WorkProgram::query()->exists()) {
             $this->command?->warn('Program kerja demo sudah ada, dilewati.');
@@ -38,15 +35,20 @@ class WorkProgramDemoSeeder extends Seeder
         $year = (int) now()->year;
         $created = 0;
 
-        foreach ($this->casts() as $cast) {
-            [$owner, $unit, $lead, $techs, $title, $items] = $cast;
+        foreach ($this->casts($cast ?? app(DemoCast::class)->resolve()) as $programCast) {
+            [$owner, $unit, $lead, $techs, $title, $items] = $programCast;
+            // IT and Maintenance may share the same Kasubag/Kabag unit: next free letter then.
+            $code = 'A';
+            while (WorkProgram::query()->where('year', $year)->where('org_unit_id', $unit->id)->where('code', $code)->exists()) {
+                $code++;
+            }
             $program = $this->programs->create($owner, [
-                'year' => $year, 'code' => 'A', 'title' => $title, 'org_unit_id' => $unit->id,
+                'year' => $year, 'code' => $code, 'title' => $title, 'org_unit_id' => $unit->id,
                 'description' => "Program kerja {$unit->name} tahun {$year}.",
             ]);
             $created++;
             foreach ($items as $i => [$itemTitle, $itemDesc, $activities]) {
-                $item = $this->programs->addItem($program, $owner, ['code' => 'A.'.($i + 1), 'title' => $itemTitle, 'description' => $itemDesc]);
+                $item = $this->programs->addItem($program, $owner, ['code' => $code.'.'.($i + 1), 'title' => $itemTitle, 'description' => $itemDesc]);
                 foreach ($activities as $j => [$actTitle, $plan, $target, $status, $progress, $remarks]) {
                     $pics = [['user_id' => $lead->id, 'role' => 'utama']];
                     foreach (array_slice($techs, $j % 2, 2) as $tech) {
@@ -70,25 +72,17 @@ class WorkProgramDemoSeeder extends Seeder
     }
 
     /** @return array<int, array{0: User, 1: OrgUnit, 2: User, 3: User[], 4: string, 5: array}> */
-    private function casts(): array
+    private function casts(DemoCast $cast): array
     {
         $out = [];
-        foreach ([['IT', 'ENABLING DIGITAL AND RELIABLE OPERATION', $this->itItems()], ['MTC', 'RELIABLE AND EFFICIENT PLANT MAINTENANCE', $this->mtcItems()]] as [$code, $title, $items]) {
-            $unit = ExecutorUnit::query()->where('code', $code)->with('orgUnit')->first();
-            if (! $unit) {
+        foreach (['it' => ['ENABLING DIGITAL AND RELIABLE OPERATION', $this->itItems()], 'mtc' => ['RELIABLE AND EFFICIENT PLANT MAINTENANCE', $this->mtcItems()]] as $flavour => [$title, $items]) {
+            if (! isset($cast->units[$flavour])) {
                 continue;
             }
-            $staff = $this->directory->staffQuery($unit)->orderByDesc('grade_level')->orderBy('id')->get();
-            $seksiIds = OrgUnit::selfAndDescendantIds($unit->org_unit_id);
-            $lead = $staff->first(fn (User $u) => in_array($u->org_unit_id, $seksiIds, true) && $this->directory->hasLeadGrade($u));
-            $techs = $staff->filter(fn (User $u) => in_array($u->org_unit_id, $seksiIds, true) && ! $this->directory->hasLeadGrade($u))->values()->all();
+            ['unit' => $unit, 'lead' => $lead, 'upper' => $upper, 'techs' => $techs] = $cast->units[$flavour];
             // The programme belongs to the sub bagian above the seksi (owned by its Kasubag) when there is one.
-            $owner = $staff->sortBy('grade_level')->first(fn (User $u) => ! in_array($u->org_unit_id, $seksiIds, true) && $this->directory->hasLeadGrade($u));
-            $ownerUnit = $owner ? OrgUnit::query()->find($owner->org_unit_id) : $unit->orgUnit;
-            if (! $lead || count($techs) < 2) {
-                continue;
-            }
-            $out[] = [$owner ?? $lead, $ownerUnit, $lead, $techs, $title, $items];
+            $ownerUnit = $upper->is($lead) ? $unit->orgUnit : OrgUnit::query()->find($upper->org_unit_id);
+            $out[] = [$upper, $ownerUnit, $lead, $techs, $title, $items];
         }
 
         return $out;

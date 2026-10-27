@@ -2,13 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DailyActivityStatus;
 use App\Enums\PmTaskStatus;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\WorkOrderStatus;
+use App\Enums\WorkProgramActivityStatus;
+use App\Models\DailyActivity;
 use App\Models\PmTask;
 use App\Models\ServiceRequest;
 use App\Models\StatusLog;
 use App\Models\WorkOrder;
+use App\Models\WorkProgram;
+use App\Models\WorkProgramActivity;
 use Database\Seeders\DemoSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,7 +48,14 @@ class DemoSeederTest extends TestCase
         $this->assertTrue(PmTask::query()->where('status', 'skipped')->whereNull('skipped_by_id')->exists(), 'auto-skipped');
         $this->assertTrue(PmTask::query()->where('status', 'skipped')->whereNotNull('skipped_by_id')->exists(), 'skipped by a lead');
         $this->assertTrue(PmTask::query()->whereNotNull('skip_proposed_at')->whereIn('status', ['due', 'overdue'])->exists(), 'skip proposal pending');
+        $this->assertTrue(ServiceRequest::query()->where('status', 'draft')->where('revision_no', '>', 0)->exists(), 'waiting for the requester to revise');
         $this->assertSame(0, StatusLog::query()->where('created_at', '>', now())->count(), 'nothing happens in the future');
+
+        // Program Kerja & Aktivitas Harian for both executor units, in every status
+        $this->assertSame(2, WorkProgram::query()->count());
+        $this->assertSame($values(WorkProgramActivityStatus::cases()), $statuses(WorkProgramActivity::class));
+        $this->assertSame($values(DailyActivityStatus::cases()), $statuses(DailyActivity::class));
+        $this->assertTrue(DailyActivity::query()->whereNotNull('work_order_id')->exists(), 'daily report from a finished WO');
 
         // Running it again changes nothing
         $count = WorkOrder::query()->count();
