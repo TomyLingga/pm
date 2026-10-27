@@ -3,8 +3,13 @@
 # Keeps BACKUP_KEEP_DAYS days of compressed dumps in /backups.
 set -eu
 
+# Connection: PG* variables, else the DB_* settings of pm-api/.env (env_file in docker-compose.yml).
 : "${PGHOST:=pm-db}"
 : "${PGPORT:=5432}"
+: "${PGDATABASE:=${DB_DATABASE:-pm}}"
+: "${PGUSER:=${DB_USERNAME:-pm}}"
+: "${PGPASSWORD:=${DB_PASSWORD:-}}"
+export PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD
 : "${BACKUP_KEEP_DAYS:=14}"
 DIR=/backups
 STAMP=$(date +%Y%m%d-%H%M%S)

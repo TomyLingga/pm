@@ -1,5 +1,8 @@
 # Design documents are kept outside version control.
 /docs/
 
-# Production secrets (see .env.prod.example)
+# Production secrets live in pm-api/.env and pm-web/.env.local (ignored by their own .gitignore)
 .env.prod
+
+# Daily PostgreSQL dumps of the pm-backup container (docker-compose.yml)
+/backups/

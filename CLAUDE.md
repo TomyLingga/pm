@@ -18,8 +18,8 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 - Frontend web: Next.js 14 (App Router) + TypeScript + Tailwind + shadcn/ui; bahasa visual & token terang/gelap di `pm-web/DESIGN.md`
 - Mobile: aplikasi Android React Native (Expo SDK 52, Node 18) dengan push & alarm, memakai API yang sama
 - Queue & scheduler: Laravel Queue (database/redis) + Laravel Task Scheduling
-- Deploy: Docker Compose di server CentOS — `docker-compose.prod.yml` (pm-nginx, pm-web, pm-api, pm-worker, pm-scheduler,
-  pm-db PostgreSQL 17, pm-redis, pm-backup); panduan `docs/DEPLOY.md`
+- Deploy: Docker Compose di server CentOS — `docker-compose.yml` (pm-web :8099, pm-api `serversideup/php` nginx+fpm :3021,
+  pm-worker, pm-scheduler, pm-db PostgreSQL 17, pm-redis, pm-backup); TLS di reverse proxy server; panduan `docs/DEPLOY.md`
 
 ## Konvensi
 - Backend = API-only (REST, JSON, prefix /api/v1). Semua logic bisnis di Service class, bukan di Controller.
@@ -46,4 +46,4 @@ General Affair, dll). Spesifikasi lengkap: @docs/PRD.md
 - Backend: `cd pm-api && php artisan serve`, test: `php artisan test` (DB PostgreSQL `pm_test`)
 - Frontend: `cd pm-web && npm run dev`, lint: `npm run lint`, build: `npm run build`
 - Mobile: `cd pm-mobile && npx expo start`, cek: `npx tsc --noEmit`
-- Deploy produksi: `./docker/deploy.sh` (memakai `.env.prod` + `docker-compose.prod.yml`; panduan `docs/DEPLOY.md`)
+- Deploy produksi: `git pull && docker compose up -d --build` (memakai `pm-api/.env` + `pm-web/.env.local`; panduan `docs/DEPLOY.md`)

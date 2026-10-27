@@ -1,0 +1,11 @@
+# Build context of the pm-web image. .env.local stays in: the build reads NEXT_PUBLIC_* from it.
+.git
+node_modules
+.next
+.next-*
+out
+coverage
+npm-debug.log*
+*.pem
+Dockerfile
+.dockerignore

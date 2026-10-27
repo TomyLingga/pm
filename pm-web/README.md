@@ -34,7 +34,7 @@ cp .env.example .env.local   # lalu sesuaikan nilainya
 
 | Variabel | Wajib | Keterangan |
 |---|---|---|
-| `BACKEND_URL` | ya | Target proxy `/api/*` dan `/sanctum/*` (Laravel). Default `http://127.0.0.1:8000`. Di produksi (`docker-compose.prod.yml`) nginx meneruskan `/api`, `/sanctum`, `/storage` langsung ke php-fpm `pm-api`, sehingga rewrite ini tidak dipakai dan Dockerfile mengisinya dengan nilai dummy. **Dibaca saat `next build` dan saat `next dev` dimulai** (rewrites ikut ter-*bake* ke hasil build). |
+| `BACKEND_URL` | ya | Target proxy `/api/*` dan `/sanctum/*` (Laravel). Default `http://127.0.0.1:8000`. Di Docker (`../docker-compose.yml`) selalu `http://pm-api:8080` lewat build arg, jadi nilai di `.env.local` diabaikan. **Dibaca saat `next build` dan saat `next dev` dimulai** (rewrites ikut ter-*bake* ke hasil build). Proxy menunggu backend maks. 120 detik (`experimental.proxyTimeout`). |
 | `NEXT_PUBLIC_PORTAL_APP_ID` | ya | UUID PrevenTech di tabel `aplikasi` Portal. Dipakai sebagai `app_id` bila URL dari Portal tidak membawa `appId`. |
 | `NEXT_PUBLIC_PORTAL_LAUNCH_URL` | ya | URL launch Portal untuk aplikasi ini, mis. `https://portal.inl.co.id/launch?app_id=<uuid>`. Tujuan redirect bila belum login / sesi habis (401). Bila kosong, pengguna diarahkan ke `/akses-ditolak`. |
 | `NEXT_PUBLIC_PORTAL_HOME_URL` | ya | Beranda Portal; tujuan setelah logout. |

@@ -53,7 +53,9 @@ Admin pertama: `php artisan db:seed` (AdminSeeder) atau `php artisan pm:make-adm
 
 ## Deploy produksi
 
-Lihat [`../docs/DEPLOY.md`](../docs/DEPLOY.md) (`docker-compose.prod.yml`: nginx, php-fpm, worker, scheduler, PostgreSQL 17, Redis, backup harian).
+`git pull && docker compose up -d --build` dari root repo ([`../docker-compose.yml`](../docker-compose.yml): pm-api
+`serversideup/php` nginx + php-fpm di port 3021, pm-web di 8099, worker, scheduler, PostgreSQL 17, Redis, backup harian).
+Konfigurasi server di `pm-api/.env` (dari `.env.production.example`); panduan lengkap [`../docs/DEPLOY.md`](../docs/DEPLOY.md).
 
 ## Scheduler & queue
 

@@ -1,0 +1,175 @@
+# PrevenTech — production stack. Deploy / update on the server:
+#
+#   git pull && docker compose up -d --build
+#
+# Once, before the first start: pm-api/.env (from pm-api/.env.production.example) and pm-web/.env.local
+# (from pm-web/.env.example). The server's reverse proxy sends the domain (https://pm.inl.co.id) to port 8099;
+# pm-web proxies /api and /sanctum to pm-api inside the network. Port 3021 is pm-api directly.
+# Guide: docs/DEPLOY.md.
+
+name: preventech
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }
+
+# pm-api, pm-worker and pm-scheduler: one image, settings from pm-api/.env
+x-laravel: &laravel
+  build:
+    context: ./pm-api
+    dockerfile: Dockerfile
+  image: preventech-api:latest
+  restart: unless-stopped
+  env_file:
+    - ./pm-api/.env
+  volumes:
+    - pm-storage:/var/www/html/storage/app
+    - pm-logs:/var/www/html/storage/logs
+  networks:
+    - preventech-internal
+  logging: *logging
+
+x-laravel-env: &laravel-env
+  DB_HOST: pm-db
+  DB_PORT: "5432"
+  REDIS_HOST: pm-redis
+
+services:
+  pm-api:
+    <<: *laravel
+    container_name: preventech_be
+    environment:
+      <<: *laravel-env
+      # On every start: wait for the database, migrate --force, storage:link, config/route/view/event cache.
+      # (OPTIMIZE off: `artisan optimize` on Laravel 8 would skip the view and event cache.)
+      AUTORUN_ENABLED: "true"
+      AUTORUN_LARAVEL_OPTIMIZE: "false"
+    ports:
+      - "3021:8080"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/healthcheck') === false ? 1 : 0);"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    depends_on:
+      pm-db:
+        condition: service_healthy
+      pm-redis:
+        condition: service_healthy
+
+  pm-worker:
+    <<: *laravel
+    container_name: preventech_worker
+    command: ["php", "/var/www/html/artisan", "queue:work", "redis", "--queue=default", "--sleep=3", "--tries=3", "--max-time=3600", "--memory=256"]
+    stop_signal: SIGTERM
+    environment:
+      <<: *laravel-env
+      AUTORUN_ENABLED: "false"
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 10s
+    depends_on:
+      pm-api:
+        condition: service_healthy
+
+  pm-scheduler:
+    <<: *laravel
+    container_name: preventech_scheduler
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    environment:
+      <<: *laravel-env
+      AUTORUN_ENABLED: "false"
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 10s
+    depends_on:
+      pm-api:
+        condition: service_healthy
+
+  pm-web:
+    build:
+      context: ./pm-web
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://pm-api:8080
+    image: preventech-web:latest
+    container_name: preventech_fe
+    restart: unless-stopped
+    ports:
+      - "8099:3000"
+    networks:
+      - preventech-internal
+    depends_on:
+      - pm-api
+    logging: *logging
+
+  # PostgreSQL 17. Credentials come from DB_DATABASE / DB_USERNAME / DB_PASSWORD in pm-api/.env and are only
+  # applied when the data volume is created; changing them later needs ALTER USER inside the database.
+  pm-db:
+    image: postgres:17-alpine
+    container_name: preventech_db
+    restart: unless-stopped
+    env_file:
+      - ./pm-api/.env
+    environment:
+      TZ: Asia/Jakarta
+    entrypoint: ["sh", "-c", "export POSTGRES_DB=\"$$DB_DATABASE\" POSTGRES_USER=\"$$DB_USERNAME\" POSTGRES_PASSWORD=\"$$DB_PASSWORD\"; exec docker-entrypoint.sh postgres"]
+    volumes:
+      - pm-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$DB_USERNAME\" -d \"$$DB_DATABASE\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - preventech-internal
+    logging: *logging
+
+  pm-redis:
+    image: redis:7-alpine
+    container_name: preventech_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - pm-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - preventech-internal
+    logging: *logging
+
+  # Daily pg_dump (BACKUP_CRON, BACKUP_KEEP_DAYS in pm-api/.env) into ./backups, or PM_BACKUP_DIR from a root .env.
+  pm-backup:
+    build:
+      context: ./docker/backup
+      dockerfile: Dockerfile
+    image: preventech-backup:latest
+    container_name: preventech_backup
+    restart: unless-stopped
+    env_file:
+      - ./pm-api/.env
+    environment:
+      PGHOST: pm-db
+    volumes:
+      - ${PM_BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      pm-db:
+        condition: service_healthy
+    networks:
+      - preventech-internal
+    logging: *logging
+
+networks:
+  preventech-internal:
+    driver: bridge
+
+volumes:
+  pm-db-data:
+  pm-redis-data:
+  pm-storage:
+  pm-logs:

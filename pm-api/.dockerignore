@@ -1,0 +1,20 @@
+# Build context of the pm-api image: no secrets, no local dependencies or runtime files.
+.git
+.env
+.env.*
+!.env.example
+!.env.production.example
+vendor
+node_modules
+public/storage
+storage/app/*
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*
+tests
+phpunit.xml
+.phpunit.result.cache
+Dockerfile
+.dockerignore
